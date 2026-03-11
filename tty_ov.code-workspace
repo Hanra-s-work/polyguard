@@ -1,0 +1,58 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"asperheader.enableDebug": false,
+		"asperheader.extensionIgnore": [
+			"*.code-workspace",
+			"python.version",
+			"settings.json",
+			"*.txt"
+		],
+		"asperheader.extensionName": "polyguard",
+		"asperheader.promptToCreateIfMissing": true,
+		"asperheader.useWorkspaceNameWhenAvailable": true,
+		"asperheader.projectCopyright": "(c) Henry Letellier",
+		"asperheader.headerLogo": [
+			"..@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+			".@...........................#@",
+			"@############################.@",
+			"@...........................@.@",
+			"@..#######################..@.@",
+			"@.#########################.@.@",
+			"@.##>_#####################.@.@",
+			"@.#########################.@.@",
+			"@.#########################.@.@",
+			"@.#########################.@.@",
+			"@.#########################.@.@",
+			"@..#######################..@.@",
+			"@...........................@.@",
+			"@..+----+______________.....@.@",
+			"@..+....+______________+....@.@",
+			"@..+----+...................@.@",
+			"@...........................@.#",
+			"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#."
+		],
+		"asperheader.projectDescription": "A module that emulates a few core functionalities of a tty (see the inner help for a list of functions).",
+		"files.associations": {
+			"*.cnf": "nginx" // This is for linting purposes, the comments in both file types are the same.
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-python.autopep8",
+			"codezombiech.gitignore",
+			"ms-python.isort",
+			"visualstudioexptteam.vscodeintellicode",
+			"giyyapan.pyformat",
+			"christian-kohler.path-intellisense",
+			"ms-python.vscode-pylance",
+			"ms-python.pylint",
+			"ms-python.python",
+			"foxundermoon.shell-format"
+		]
+	}
+}
