@@ -1,37 +1,34 @@
 # 
 # +==== BEGIN polyguard =================+
-# LOGO: 
-# ..@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# .@...........................#@
-# @############################.@
-# @...........................@.@
-# @..#######################..@.@
-# @.#########################.@.@
-# @.##>_#####################.@.@
-# @.#########################.@.@
-# @.#########################.@.@
-# @.#########################.@.@
-# @.#########################.@.@
-# @..#######################..@.@
-# @...........................@.@
-# @..+----+______________.....@.@
-# @..+....+______________+....@.@
-# @..+----+...................@.@
-# @...........................@.#
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@#.
+# LOGO:
+#       input
+# 
+#    @#$%!  hello
+#      |     |
+#      +--+--+
+#         |
+#         v
+#   +------------+
+#   | POLY GUARD |
+#   +------------+
+#     |        |
+#     v        v
+#  BLOCKED  PASSED
+#    KO       OK
 # /STOP
 # PROJECT: polyguard
 # FILE: pyproject.toml
-# CREATION DATE: 06-11-2025
-# LAST Modified: 13:49:22 06-11-2025
-# DESCRIPTION: 
-# A module that allows you to display text with a few boilers (i.e. put your text in a square for titles). It also allows to log to the terminal by wrapping around the logging library.
+# CREATION DATE: 13-03-2026
+# LAST Modified: 11:55:2 13-03-2026
+# DESCRIPTION:
+# A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
-# COPYRIGHT: (c) Asperguide
+# COPYRIGHT: (c) Henry Letellier
 # PURPOSE: File in charge of containing the required configuration to allow the python code to compile as a library.
 # // AR
 # +==== END polyguard =================+
 # 
+
 
 # pyproject.toml
 
@@ -55,34 +52,28 @@ authors = [
 maintainers = [
     { name = "Henry Letellier", email = "henrysoftwarehouse@protonmail.com" },
 ]
-dependencies = [
-    "colorama==0.4.6",
-    "prettytable==3.17.0",
-    "ask_question==1.2.12",
-    "colourise-output==1.1.6",
-    "prompt-toolkit==3.0.52",
-]
-description = "A module that allows you to display text with a few boilers (i.e. put your text in a square for titles). It also allows to log to the terminal by wrapping around the logging library."
+dependencies = []
+description = "A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages."
 license-files = ["LICENSE"]
 readme = { file = "README.md", content-type = "text/markdown" }
 keywords = [
-    "logger",
-    "terminal",
-    "logging",
-    "lightweight",
-    "colour",
-    "stdout",
-    "stderr",
-    "optimised",
-    "wrapper",
-    "pure python",
+    "profanity",
+    "profanity-filter",
+    "swear-words",
+    "word-filter",
+    "text-filtering",
+    "text-sanitization",
+    "content-moderation",
+    "chat-moderation",
+    "multilingual",
     "python",
 ]
 classifiers = [
-    "Environment :: Console",
-    "Natural Language :: English",
     "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
     # Specify the Python versions you support here.
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -92,6 +83,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Filters",
 ]
 requires-python = ">=3.9"
 
