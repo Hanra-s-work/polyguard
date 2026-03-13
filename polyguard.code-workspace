@@ -32,7 +32,7 @@
 			" BLOCKED  PASSED",
 			"   KO       OK"
 		],
-		"asperheader.projectDescription": "A module that provides a set of wearwords to listen to when filtering while allowing to toggle on and off different languages.",
+		"asperheader.projectDescription": "A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.",
 		"files.associations": {
 			"*.cnf": "nginx" // This is for linting purposes, the comments in both file types are the same.
 		}
