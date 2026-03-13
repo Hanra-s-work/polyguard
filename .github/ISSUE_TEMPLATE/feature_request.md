@@ -12,10 +12,10 @@ _All lines marked with a '*' need to be checked before proceeding_
 **Checklist**
 Please ensure the following items are completed before submitting your report:
 
-- [ ] * I have searched [existing features](https://github.com/Hanra-s-work/display_tty/issues?q=is%3Aissue+label%3Aenhancement) to ensure this feature has not been proposed.
-- [ ] * I have read the [Code of Conduct](https://github.com/Hanra-s-work/display_tty/blob/main/CODE_OF_CONDUCT.md).
-- [ ] * I have read the [commit conventions](https://github.com/Hanra-s-work/display_tty/blob/main/COMMIT_CONVENTION.md).
-- [ ] * I have read the [contribution guidelines](https://github.com/Hanra-s-work/display_tty/blob/main/CONTRIBUTING.md).
+- [ ] * I have searched [existing features](https://github.com/Hanra-s-work/polyguard/issues?q=is%3Aissue+label%3Aenhancement) to ensure this feature has not been proposed.
+- [ ] * I have read the [Code of Conduct](https://github.com/Hanra-s-work/polyguard/blob/main/CODE_OF_CONDUCT.md).
+- [ ] * I have read the [commit conventions](https://github.com/Hanra-s-work/polyguard/blob/main/COMMIT_CONVENTION.md).
+- [ ] * I have read the [contribution guidelines](https://github.com/Hanra-s-work/polyguard/blob/main/CONTRIBUTING.md).
 
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]

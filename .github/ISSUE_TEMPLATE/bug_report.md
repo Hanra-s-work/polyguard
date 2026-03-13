@@ -12,9 +12,9 @@ _All lines marked with a '*' need to be checked before proceeding_
 **Checklist**
 Please ensure the following items are completed before submitting your report:
 
-- [ ] * I have read the [Code of Conduct](https://github.com/Hanra-s-work/display_tty/blob/main/CODE_OF_CONDUCT.md).
+- [ ] * I have read the [Code of Conduct](https://github.com/Hanra-s-work/polyguard/blob/main/CODE_OF_CONDUCT.md).
 - [ ] * I have searched existing issues to ensure this bug has not been reported.
-- [ ] * I have read the [Documentation](https://github.com/Hanra-s-work/display_tty/blob/main/README.md) to ensure that my bug hasn't already been answered.
+- [ ] * I have read the [Documentation](https://github.com/Hanra-s-work/polyguard/blob/main/README.md) to ensure that my bug hasn't already been answered.
 - [ ] * I have provided all necessary details, including logs and configuration.
 
 **\* Describe the bug**
@@ -24,8 +24,8 @@ A clear and concise description of what the bug is.
 Steps to reproduce the behavior:
 
 1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
+2. Import '...'
+3. Run '...'
 4. See error.
 
 **\* Expected behavior**
@@ -38,7 +38,7 @@ If applicable, add screenshots to help explain your problem.
 
 - OS: [e.g., Windows, Debian]
 
-- browser Name and version: [e.g., Chrome Version 133.0.6943.98 (Official build) (64 bits)]
+- python version: [e.g. 3.14]
 
 **\* Logs and Error Messages**
 Please attach any relevant logs or console outputs.
@@ -53,9 +53,9 @@ If applicable, provide links to any documentation you referred to.
 Add any other context about the problem here.
 
 **Note**
-Please ensure your report adheres to our [Code of Conduct](https://github.com/Hanra-s-work/display_tty/blob/main/CODE_OF_CONDUCT.md).
+Please ensure your report adheres to our [Code of Conduct](https://github.com/Hanra-s-work/polyguard/blob/main/CODE_OF_CONDUCT.md).
 
 **Contribution**
-If you plan to submit a fix, please follow our [commit conventions](https://github.com/Hanra-s-work/display_tty/blob/main/COMMIT_CONVENTION.md) and [contribution guidelines](https://github.com/Hanra-s-work/display_tty/blob/main/CONTRIBUTING.md).
+If you plan to submit a fix, please follow our [commit conventions](https://github.com/Hanra-s-work/polyguard/blob/main/COMMIT_CONVENTION.md) and [contribution guidelines](https://github.com/Hanra-s-work/polyguard/blob/main/CONTRIBUTING.md).
 
 _Note: Please ensure you have filled out the mandatory sections before submitting._
