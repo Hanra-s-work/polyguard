@@ -1,31 +1,27 @@
-<!--
+<!-- 
 -- +==== BEGIN polyguard =================+
--- LOGO: 
--- ..@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
--- .@...........................#@
--- @############################.@
--- @...........................@.@
--- @..#######################..@.@
--- @.#########################.@.@
--- @.##>_#####################.@.@
--- @.#########################.@.@
--- @.#########################.@.@
--- @.#########################.@.@
--- @.#########################.@.@
--- @..#######################..@.@
--- @...........................@.@
--- @..+----+______________.....@.@
--- @..+....+______________+....@.@
--- @..+----+...................@.@
--- @...........................@.#
--- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@#.
+-- LOGO:
+--       input
+-- 
+--    @#$%!  hello
+--      |     |
+--      +--+--+
+--         |
+--         v
+--   +------------+
+--   | POLY GUARD |
+--   +------------+
+--     |        |
+--     v        v
+--  BLOCKED  PASSED
+--    KO       OK
 -- /STOP
 -- PROJECT: polyguard
 -- FILE: README.md
--- CREATION DATE: 06-11-2025
--- LAST Modified: 19:32:2 11-02-2026
--- DESCRIPTION: 
--- A tiny terminal (just the functions I need) cross-platform implemented in python.
+-- CREATION DATE: 13-03-2026
+-- LAST Modified: 23:53:25 13-03-2026
+-- DESCRIPTION:
+-- A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 -- /STOP
 -- COPYRIGHT: (c) Henry Letellier
 -- PURPOSE: The readme file in charge of explaining how to use the module.
@@ -67,14 +63,8 @@ This project now has automated documentation that gets generated, this manually 
     1. [Running as a script](#running-as-a-script)
     2. [Importing](#importing)
     3. [Initialising](#initialising)
-    4. [Using built-in commands](#using-built-in-commands)
-6. [Features](#features)
-    1. [Core Commands](#core-commands)
-    2. [Advanced Features](#advanced-features)
-    3. [Extensibility](#extensibility)
-7. [Documentation](#documentation)
-8. [Author](#author)
-9. [Version](#version)
+6. [Documentation](#documentation)
+7. [Author](#author)
 
 ## Installation
 
@@ -108,136 +98,36 @@ You can run polyguard directly as a script to start an interactive terminal sess
 python -m polyguard
 ```
 
-This will launch the interactive TTY interface where you can execute commands.
+This will launch the interactive PolyGuard interface where you can execute commands.
 
 ### Importing
 
 ```py
-from polyguard import TTY
+from polyguard import PolyGuard
 ```
 
 ### Initialising
 
-The generic class is: `TTY(err: int, error: int, success: int, colour_lib: ColouriseOutput, ask_question: AskQuestion, colours: Dict, colourise_output: bool = True)`
+The generic class is: `PolyGuard(success: int = 0, error: int = 1, log: bool = True, debug: bool = False)`
 
 For your convenience, you can initialize the class with default parameters:
 
 ```py
-from polyguard import TTY, ColouriseOutput, AskQuestion
-
-ERR = 84
-ERROR = ERR
+from polyguard import PolyGuard
+ERROR = 1
 SUCCESS = 0
-COLOUR_LIB = ColouriseOutput()
-ASK_QUESTION = AskQuestion()
-CONSTANTS = {
-    "default": "0A",
-    "prompt": "0B",
-    "error": "0C",
-    "success": "03",
-    "info": "0D",
-    "reset": "rr",
-    "help_title_colour": "0E",
-    "help_command_colour": "0A",
-    "help_description_colour": "0F",
-    "env_term_colour": "09",
-    "env_shell_colour": "03",
-    "env_definition_colour": "0B",
-    "session_name_colour": "0D"
-}
-COLOURISE_OUTPUT = True
+LOG=True
+DEBUG=False
 
-tty_instance = TTY(
-    ERR,
-    ERROR,
+polyguard_instance = PolyGuard(
     SUCCESS,
+    ERROR,
     COLOUR_LIB,
-    ASK_QUESTION,
-    CONSTANTS,
-    COLOURISE_OUTPUT
+    LOG,
+    DEBUG
 )
-tty_instance.load_basics()
-tty_instance.mainloop("Custom session")
-tty_instance.unload_basics()
+polyguard_instance()
 ```
-
-### Using built-in commands
-
-Once initialized, you can use various built-in commands programmatically. Here are some examples:
-
-#### File System Navigation
-
-```py
-# Change directory
-tty_instance.change_directory(["/path/to/directory"])
-
-# Print working directory
-tty_instance.pwd([])
-
-# List files
-tty_instance.bind_ls([])
-```
-
-#### Environment Management
-
-```py
-# Display environment variables
-tty_instance.env([])
-
-# Set an environment variable
-tty_instance.setenv(["MY_VAR", "my_value"])
-
-# Unset an environment variable
-tty_instance.unsetenv(["MY_VAR"])
-```
-
-#### Running External Commands
-
-```py
-# Run a system command
-tty_instance.run_command(["echo", "Hello World"])
-```
-
-#### Session Management
-
-```py
-# Change session name
-tty_instance.process_session_name(["new_session_name"])
-
-# Show command history
-tty_instance.show_history([])
-```
-
-## Features
-
-polyguard includes a variety of built-in commands and features:
-
-### Core Commands
-
-- **File System Navigation**: `cd`, `pwd`, `ls` (with colorized output)
-- **File Operations**: `mkdir`, `touch`, `rm`, `rmdir`
-- **System Interaction**: `run` (execute external commands), `super_run` (run with elevated privileges)
-- **Environment Management**: `env`, `env++`, `setenv`, `unsetenv`
-- **Session Management**: `session_name`, `history`
-- **Information**: `version`, `author`, `client`, `is_admin`
-- **Utilities**: `hello_world`, `?` (display last status code)
-
-### Advanced Features
-
-- **Piping Support**: Chain commands using pipes
-- **Argument Input**: Full support for command-line arguments
-- **Colorized Output**: Configurable color schemes for different output types
-- **Command History**: Track and display previous commands
-- **Help System**: Built-in help for all commands
-- **Auto-completion**: Tab completion for commands
-- **Multi-command Execution**: Execute multiple commands in sequence
-- **Comment Support**: Ignore lines starting with comment tokens
-
-### Extensibility
-
-- **Custom Commands**: Import additional functions into the shell
-- **Session Management**: Multiple named sessions
-- **Configurable Tokens**: Customize command separators and comment tokens
 
 ## Documentation
 
@@ -249,14 +139,3 @@ To generate the documentation locally, navigate to the `doxygen_generation` dire
 
 This module was written by (c) Henry Letellier
 Attributions are appreciated.
-
-## Version
-
-The current version is 1.0.0
-
-An easy way to display the version is:
-
-```py
-import polyguard
-print(f"Version : {polyguard.__version__}")
-```
