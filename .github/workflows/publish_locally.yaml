@@ -129,51 +129,6 @@ jobs:
           echo "Content of file: $(cat ${{env.SETUP_FILE}})"
           echo -e "\n\n\n\n\n\n\n\n\n"
 
-      - name: Get non published python packages
-        run: |
-          git clone "https://github.com/Hanra-s-work/ask_question.git" aq
-          git clone "https://github.com/Hanra-s-work/colourise_output.git" co
-          echo "Content: $(ls)"
-          echo -e "\n\n\n\n\n\n\n\n\n"
-
-      - name: Building dependencies
-        run: |
-          FOLDERS="aq co"
-          echo -e "\n\n\n\n\n\n\n"
-          echo "FOLDERS = $FOLDERS"
-          echo -e "\n\n\n\n\n\n\n"
-          echo "Installing build"
-          pip install build
-          echo "looping through"
-          for elem in $FOLDERS
-          do
-            echo -e "\n\n\n\n\n\n\n"
-            echo "Entering $elem"
-            cd "$elem"
-            echo "Checking if requirements in $elem"
-            if [ -f requirements.txt ]
-            then
-              echo "Installing requirements $elem"
-              pip install -r requirements.txt
-            fi
-            echo "Building $elem"
-            python -m build
-            echo "Entering dist"
-            cd dist
-            echo "Content: $(ls)"
-            echo "Locating a package"
-            PIP_PACKAGE="$(find . -name "*.tar.gz" -type f | cut -d " " -f 1)"
-            echo -e "\n\n\n\n\n\n\n"
-            echo "Package found: $PIP_PACKAGE"
-            echo -e "\n\n\n\n\n\n\n"
-            pip install "$PIP_PACKAGE"
-            cd ../..
-          done
-          echo -e "\n\n\n\n\n\n\n"
-          pip list
-          echo -e "\n\n\n\n\n\n\n"
-          echo "Content: $(ls)"
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -204,11 +159,6 @@ jobs:
           fi
           pip install build
           python -m build
-
-      - name: Remove repositories
-        run: |
-          rm -rvf aq co
-
       - name: Installing the package
         run: |
           PIP_PACKAGE="$(find . -name "*.tar.gz" -type f | cut -d " " -f 1)"
