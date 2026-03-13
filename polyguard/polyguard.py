@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: polyguard.py
 # CREATION DATE: 13-03-2026
-# LAST Modified: 10:46:20 13-03-2026
+# LAST Modified: 11:13:38 13-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -30,12 +30,19 @@
 """
 
 import sys
+from typing import Any
 
 
-def main() -> int:
-    return 0
+class PolyGuard:
+    def __init__(self, success: int = 0, error: int = 1, log: bool = True, debug: bool = False) -> None:
+        pass
+
+    def __call__(self, *args: Any, **kwds: Any) -> int:
+        return self.main()
+
+    def main(self) -> int:
+        return 0
 
 
 if __name__ == "__main__":
-    import sys
-    sys.exit(main())
+    sys.exit(PolyGuard()())
