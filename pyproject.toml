@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: pyproject.toml
 # CREATION DATE: 13-03-2026
-# LAST Modified: 11:55:2 13-03-2026
+# LAST Modified: 22:54:10 13-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -71,7 +71,6 @@ keywords = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
     # Specify the Python versions you support here.
