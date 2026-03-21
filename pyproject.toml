@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: pyproject.toml
 # CREATION DATE: 13-03-2026
-# LAST Modified: 23:32:0 13-03-2026
+# LAST Modified: 0:26:53 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -92,3 +92,8 @@ Homepage = "https://github.com/Hanra-s-work/polyguard"
 Documentation = "https://github.com/Hanra-s-work/polyguard/blob/main/README.md"
 Repository = "https://github.com/Hanra-s-work/polyguard.git"
 Issues = "https://github.com/Hanra-s-work/polyguard/issues"
+
+[project.scripts]
+# Console script to generate the SQLite DB from plaintext lists.
+polyguard-generate-db = "polyguard.src.generate_db:main"
+polyguard = "polyguard.src.cli:main"
