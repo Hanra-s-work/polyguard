@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: constants.py
 # CREATION DATE: 20-03-2026
-# LAST Modified: 15:19:51 21-03-2026
+# LAST Modified: 15:56:52 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -122,12 +122,17 @@ POLY_BOOT_MSG = (
 )
 
 POLY_HELP_TEXT = (
-    "Commands:\n"
-    "  help        Short help text (this message)\n"
-    "  man         Longer manual describing usage and options\n"
-    "  exit, quit  Leave the REPL\n"
-    "  db          Show configured DB path\n"
-    "  <word>      Check whether <word> is blocked (prints BLOCKED/OK)\n"
+    "Commands (prefix with ':' e.g. ':help'):\n"
+    "  :help        Short help text (this message)\n"
+    "  :man         Longer manual describing usage and options\n"
+    "  :exit, :quit Leave the REPL\n"
+    "  :db          Show configured DB path\n"
+    "  <word>       Type a word to check it (no prefix required)\n"
+    "  :log <on/off>        Toggle logging output\n"
+    "  :langopt <lang> <on/off>  Enable/disable a language in your config\n"
+    "  :langs        List languages available in the DB (with counts)\n"
+    "  :langstatus   Show which languages are enabled in your config\n"
+    "  :word <w> [<lang>]  Check a word optionally for a specific language\n"
 )
 
 POLY_MAN_TEXT = (
@@ -135,10 +140,20 @@ POLY_MAN_TEXT = (
     "This REPL accepts single-word queries and returns whether the word\n"
     "is considered a swearword according to the configured language lists.\n\n"
     "If started with --db-path, that DB will be used; otherwise the package\n"
-    "default DB is used. You can also pipe words via stdin for batch checks.\n"
+    "default DB is used. You can also pipe words via stdin for batch checks.\n\n"
+    "Command prefixing:\n"
+    "  To avoid conflicts with words that match command names, commands must be\n"
+    "  prefixed with ':' (for example ':langs' or ':langopt en_uk off'). Any input\n"
+    "  that does not start with ':' is treated as a word to check.\n\n"
+    "Additional commands:\n"
+    "  :log <on/off>             Turn logging on or off for the running session.\n"
+    "  :langopt <lang> <on/off>  Temporarily enable or disable a language in your session.\n"
+    "  :langs                    Show languages present in the DB and word counts.\n"
+    "  :langstatus               Show which languages are currently enabled in your config.\n"
+    "  :word <w> [<lang>]        Check <w> in either your current config or a specific language.\n"
 )
 
 POLY_PROMPT = "polyguard> "
 STATUS_BLOCKED = "BLOCKED"
 STATUS_OK = "OK"
-DB_PATH_FMT = f"DB path: {DEFAULT_DB_PATH}"
+DB_PATH_FMT = "DB path: {path}"

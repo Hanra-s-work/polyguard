@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: sqlite_handler.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 15:10:34 21-03-2026
+# LAST Modified: 15:30:45 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -245,6 +245,39 @@ class SQLiteHandler:
             if self.log:
                 self.disp.log_info(
                     f"Found {len(result)} words for lang={lang.value}")
+            return result
+
+    def list_languages(self) -> Dict[str, int]:
+        """Return a mapping of language code -> number of words present in the DB.
+
+        Returns an empty dict if the DB is empty or the table is missing.
+        """
+        with self._lock:
+            if self._conn is None:
+                raise RuntimeError("Connection is not open")
+
+            cur = self._conn.cursor()
+            cur.execute("SELECT lang, COUNT(1) FROM words GROUP BY lang")
+            rows = cur.fetchall()
+
+            result: Dict[str, int] = {}
+
+            for row in rows:
+                if not row:
+                    continue
+
+                lang = row[0]
+                count = 0
+                try:
+                    count = int(row[1]) if row[1] is not None else 0
+                except (ValueError, TypeError):
+                    count = 0
+
+                result[lang] = count
+
+            if self.log:
+                self.disp.log_info(f"Languages in DB: {len(result)} found")
+
             return result
 
     def has_word(self, lang: POLY_CONST.Langs, word: str) -> bool:

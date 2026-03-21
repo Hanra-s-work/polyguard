@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: polyguard.py
 # CREATION DATE: 13-03-2026
-# LAST Modified: 15:10:4 21-03-2026
+# LAST Modified: 16:1:15 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -100,11 +100,28 @@ class PolyGuard:
         if not text:
             return False
 
+        # If the input contains whitespace, check each token individually
         text_low = text.lower()
 
-        # Resolve languages to check
         languages = languages_to_check or self.default_choice
 
+        if " " in text_low:
+            # Check individual tokens first (e.g. 'mother fucker' -> 'mother', 'fucker')
+            for tok in text_low.split():
+                if self._check_token(tok, languages):
+                    return True
+
+            # Finally, check the whole phrase as a single entry
+            return self._check_token(text_low, languages)
+
+        # Single token; delegate to helper
+        return self._check_token(text_low, languages)
+
+    def _check_token(self, text_low: str, languages: POLY_CONST.LangConfig) -> bool:
+        """Internal helper that checks a single, already-lowercased token.
+
+        Returns True if token is found in enabled languages.
+        """
         # Build list of languages enabled in the provided config
         to_check = []
         for lang in POLY_CONST.Langs:
@@ -141,8 +158,8 @@ class PolyGuard:
         # Ensure persistent connection before DB access
         if not self.ensure_connection():
             self.disp.log_error(
-                # type: ignore[attr-defined]
-                "No DB connection available in is_a_swearword; aborting check")
+                "No DB connection available in is_a_swearword; aborting check"
+            )
             return False
 
         try:

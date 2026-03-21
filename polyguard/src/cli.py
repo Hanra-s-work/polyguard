@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: cli.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 15:19:27 21-03-2026
+# LAST Modified: 16:1:59 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -48,6 +48,26 @@ def _iter_input_lines(stream: Iterable[str]):
             yield text
 
 
+def _resolve_lang(token: str):
+    """Resolve a user-provided token to a `POLY_CONST.Langs` member.
+
+    Accepts either the enum value ('en_uk') or the enum name ('EN_UK').
+    Returns None if no match is found.
+    """
+    if not token:
+        return None
+
+    norm = token.lower().replace("-", "_")
+    try:
+        return POLY_CONST.Langs(norm)
+    except ValueError:
+        # Try matching by enum name
+        name = token.upper().replace("-", "_")
+        if hasattr(POLY_CONST.Langs, name):
+            return getattr(POLY_CONST.Langs, name)
+        return None
+
+
 class CLI:
     """Simple CLI class for PolyGuard interactive and batch usage.
 
@@ -69,6 +89,129 @@ class CLI:
             print(POLY_CONST.STATUS_BLOCKED if result else POLY_CONST.STATUS_OK)
         return 0
 
+    def cmd_log(self, tokens: list[str]) -> bool:
+        if len(tokens) != 2:
+            print("Usage: :log <on|off>")
+            return True
+        val = tokens[1].lower() in ("on", "1", "true", "yes")
+        self.guard.log = val
+        if self.guard.sqlite is not None:
+            self.guard.sqlite.log = val
+        print("Logging enabled" if val else "Logging disabled")
+        return True
+
+    def cmd_langopt(self, tokens: list[str]) -> bool:
+        if len(tokens) != 3:
+            print("Usage: :langopt <lang> <on|off>")
+            return True
+        lang_token = tokens[1]
+        lang_enum = _resolve_lang(lang_token)
+
+        if lang_enum is None:
+            print(f"Unknown language: {lang_token}")
+            return True
+
+        val = tokens[2].lower() in ("on", "1", "true", "yes")
+        try:
+            setattr(self.guard.default_choice, lang_enum.value, val)
+            print(f"Set {lang_enum.value} {'enabled' if val else 'disabled'}")
+        except Exception as exc:
+            print(f"Failed to set language option: {exc}")
+        return True
+
+    def cmd_langs(self, tokens: list[str]) -> bool:
+        if not self.guard.ensure_connection():
+            print("No DB connection available")
+            return True
+
+        try:
+            mapping = self.guard.sqlite.list_languages()
+        except Exception as exc:
+            print(f"Failed to query DB: {exc}")
+            return True
+
+        if not mapping:
+            print("No languages found in DB")
+            return True
+
+        # Fold entries to lines of ~80 chars for compact display
+        entries = []
+        for lang_code, count in sorted(mapping.items()):
+            enabled = False
+            try:
+                enabled = bool(getattr(self.guard.default_choice, lang_code))
+            except Exception:
+                enabled = False
+            mark = "[enabled]" if enabled else ""
+            entries.append(f"{lang_code}({count}){mark}")
+
+        max_width = 80
+        line = []
+        cur_len = 0
+        for e in entries:
+            add_len = len(e) + (2 if line else 0)
+            if cur_len + add_len > max_width and line:
+                print(", ".join(line))
+                line = [e]
+                cur_len = len(e)
+            else:
+                if line:
+                    line.append(e)
+                    cur_len += add_len
+                else:
+                    line = [e]
+                    cur_len = len(e)
+
+        if line:
+            print(", ".join(line))
+
+        return True
+
+    def cmd_langstatus(self, tokens: list[str]) -> bool:
+        for lang in POLY_CONST.Langs:
+            try:
+                enabled = bool(getattr(self.guard.default_choice, lang.value))
+            except Exception:
+                enabled = False
+            print(f"{lang.value}: {'on' if enabled else 'off'}")
+        return True
+
+    def cmd_word(self, tokens: list[str]) -> bool:
+        if len(tokens) < 2:
+            print("Usage: :word <word> [<lang>]")
+            return True
+
+        # Support multi-word phrases. If the final token resolves to a language,
+        # treat it as the optional language param, otherwise the whole remainder
+        # is the phrase to check.
+        if len(tokens) >= 3:
+            possible_lang = tokens[-1]
+            lang_enum = _resolve_lang(possible_lang)
+            if lang_enum is not None:
+                word = " ".join(tokens[1:-1])
+            else:
+                word = " ".join(tokens[1:])
+                lang_enum = None
+        else:
+            word = tokens[1]
+            lang_enum = None
+
+        if lang_enum is not None:
+            if not self.guard.ensure_connection():
+                print("No DB connection available")
+                return True
+            try:
+                found = self.guard.sqlite.has_word(lang_enum, word)
+                print(POLY_CONST.STATUS_BLOCKED if found else POLY_CONST.STATUS_OK)
+            except Exception as exc:
+                print(f"DB query failed: {exc}")
+            return True
+
+        # No explicit language requested; use current config (supports phrases)
+        result = self.guard.is_a_swearword(word)
+        print(POLY_CONST.STATUS_BLOCKED if result else POLY_CONST.STATUS_OK)
+        return True
+
     def repl(self) -> int:
         print(POLY_CONST.POLY_BOOT_MSG)
 
@@ -82,27 +225,60 @@ class CLI:
                 if not text:
                     continue
 
-                cmd = text.strip()
-                cmd_low = cmd.lower()
+                text = text.strip()
 
-                if cmd_low in ("quit", "exit"):
+                # Commands are prefixed with ':' to avoid clashing with words to check
+                if not text.startswith(":"):
+                    # Treat entire input as a word to check
+                    result = self.guard.is_a_swearword(text)
+                    print(POLY_CONST.STATUS_BLOCKED if result else POLY_CONST.STATUS_OK)
+                    continue
+
+                # Remove prefix and split into tokens for command dispatch
+                cmd_body = text[1:]
+                tokens = cmd_body.split()
+                if not tokens:
+                    continue
+                base = tokens[0].lower()
+
+                if base in ("quit", "exit"):
                     break
 
-                if cmd_low == "help":
+                if base == "help":
                     print(POLY_CONST.POLY_HELP_TEXT)
                     continue
 
-                if cmd_low == "man":
+                if base == "man":
                     print(POLY_CONST.POLY_MAN_TEXT)
                     continue
 
-                if cmd_low == "db":
+                if base == "db":
                     print(POLY_CONST.DB_PATH_FMT.format(
                         path=self.guard.db_path))
                     continue
 
-                result = self.guard.is_a_swearword(cmd)
-                print(POLY_CONST.STATUS_BLOCKED if result else POLY_CONST.STATUS_OK)
+                # Dispatch other commands to dedicated handlers
+                if base == "log":
+                    self.cmd_log(tokens)
+                    continue
+
+                if base == "langopt":
+                    self.cmd_langopt(tokens)
+                    continue
+
+                if base == "langs":
+                    self.cmd_langs(tokens)
+                    continue
+
+                if base in ("langstatus", "langsstatus"):
+                    self.cmd_langstatus(tokens)
+                    continue
+
+                if base == "word":
+                    self.cmd_word(tokens)
+                    continue
+
+                print(f"Unknown command: {base}")
 
         except KeyboardInterrupt:
             print()
