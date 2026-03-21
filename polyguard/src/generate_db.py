@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: generate_db.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 14:24:18 21-03-2026
+# LAST Modified: 16:58:4 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # Build-time helper to generate the SQLite DB from plaintext word lists.
@@ -38,10 +38,13 @@
 import os
 from typing import Dict, Iterable
 import argparse
+from display_tty import Disp, initialise_logger
 
 from . import constants as POLY_CONST
 from .normalise import Normalise
 from .sqlite_handler import SQLiteHandler
+
+IDISP: Disp = initialise_logger("Generate DB", False)
 
 
 def build_db_from_dir(source_dir: str, db_path: str) -> int:
@@ -51,7 +54,16 @@ def build_db_from_dir(source_dir: str, db_path: str) -> int:
     """
     files = []
 
-    for entry in os.listdir(source_dir):
+    IDISP.log_info(f"Scanning source directory for .txt files: {source_dir}")
+    try:
+        entries = os.listdir(source_dir)
+    except OSError as exc:
+        IDISP.log_error(
+            f"Failed to list source directory '{source_dir}': {exc}"
+        )
+        raise
+
+    for entry in entries:
         full = os.path.join(source_dir, entry)
         if not os.path.isfile(full):
             continue
@@ -62,6 +74,7 @@ def build_db_from_dir(source_dir: str, db_path: str) -> int:
         files.append(full)
 
     if not files:
+        IDISP.log_info("No .txt wordlist files found; nothing to do")
         return 0
 
     # Map language enum values to Enum members for fast lookup
@@ -74,7 +87,14 @@ def build_db_from_dir(source_dir: str, db_path: str) -> int:
     for file_path in files:
         stem = os.path.splitext(os.path.basename(file_path))[0]
 
+        # Determine language by the filename stem. Expected forms include
+        # language codes such as 'en_uk', 'fr', 'es'. If the stem does not
+        # match a known `Langs` value, the words are stored under
+        # `Langs.OTHER`.
         lang_key = lang_map.get(stem, POLY_CONST.Langs.OTHER)
+        IDISP.log_info(
+            f"Processing file '{file_path}' -> language '{lang_key.value}'"
+        )
 
         words = Normalise.load_from_file(file_path)
 
@@ -84,13 +104,19 @@ def build_db_from_dir(source_dir: str, db_path: str) -> int:
     # Ensure data folder exists for DB path
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
+    IDISP.log_info(f"Creating/updating DB at: {db_path}")
     handler = SQLiteHandler(db_path, readonly=False)
-    handler.connect()
-    handler.create_schema()
+    try:
+        handler.connect()
+        handler.create_schema()
 
-    _ = handler.bulk_insert(mapping)
+        inserted = handler.bulk_insert(mapping)
+        IDISP.log_info(
+            f"Bulk insert completed; inserted ~{inserted} rows (per-lang sums)"
+        )
 
-    handler.close()
+    finally:
+        handler.close()
 
     return len(mapping)
 
@@ -101,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parser.add_argument(
         "--source-dir",
-        default="wordlists",
+        default=POLY_CONST.DEFAULT_SOURCE_WORDS,
         help="Directory containing newline-delimited .txt word lists"
     )
     parser.add_argument(
@@ -114,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
 
     count = build_db_from_dir(args.source_dir, args.db_path)
 
+    IDISP.log_info(f"Processed {count} language files into {args.db_path}")
     print(f"Processed {count} language files into {args.db_path}")
 
     return 0

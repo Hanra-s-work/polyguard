@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: constants.py
 # CREATION DATE: 20-03-2026
-# LAST Modified: 16:13:58 21-03-2026
+# LAST Modified: 18:39:49 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -42,6 +42,8 @@ MODULE_ROOT = Path(__file__).resolve().parent.parent
 # Callers may override this value when constructing `PolyGuard`.
 DEFAULT_DB_PATH = MODULE_ROOT / "data" / "polyguard.db"
 
+DEFAULT_SOURCE_WORDS = MODULE_ROOT.parent / "wordlists"
+
 # Default maximum number of language caches to keep in memory per `PolyGuard`.
 # Tuneable: keeps memory bounded while allowing frequent languages to be cached.
 DEFAULT_CACHE_MAX_LANGS = 8
@@ -52,65 +54,200 @@ class LangConfig:
     """This is the class in charge of allowing the user to configure the languages they which to check for.
     """
     # English variants
-    en_uk: bool = True
-    en_us: bool = True
+    en: bool = True
+    en_uk: bool = False
+    en_us: bool = False
     en_au: bool = False
 
     # Western European
     fr: bool = True
+    fr_ca: bool = False
     es: bool = True
+    es_es: bool = False
+    es_mx: bool = False
+    es_ar: bool = False
     de: bool = True
+    de_at: bool = False
+    de_ch: bool = False
+    de_de: bool = False
     it: bool = True
+    it_ch: bool = False
+    it_it: bool = False
     pt: bool = True  # generic Portuguese (Europeans usually mean pt-PT)
+    pt_pt: bool = False
+    pt_br: bool = False
+    pt_ao: bool = False
     nl: bool = True
+    nl_nl: bool = False
+    nl_be: bool = False
+    nl_sr: bool = False
 
     # Central & Eastern Europe
     pl: bool = False
+    pl_pl: bool = False
+    pl_ua: bool = False
+    pl_lt: bool = False
     ro: bool = False
+    ro_ro: bool = False
+    ro_md: bool = False
+    ro_rs: bool = False
     hu: bool = False
+    hu_hu: bool = False
+    hu_at: bool = False
+    hu_sk: bool = False
+    hu_rs: bool = False
 
     # Nordic & other European languages
     sv: bool = False
+    sv_se: bool = False
+    sv_fi: bool = False
+    sv_no: bool = False
+    sv_dk: bool = False
     da: bool = False
+    da_dk: bool = False
+    da_se: bool = False
+    da_no: bool = False
+    da_gl: bool = False
     no: bool = False
+    no_no: bool = False
+    no_se: bool = False
+    no_dk: bool = False
+    no_sa: bool = False
     fi: bool = False
+    fi_fi: bool = False
+    fi_se: bool = False
+    fi_ru: bool = False
+    fi_ee: bool = False
     el: bool = False  # Greek
+    el_gr: bool = False
+    el_cy: bool = False
+    el_tr: bool = False
+    el_it: bool = False
+    el_al: bool = False
 
     # Other common regional languages
     tr: bool = False  # Turkish (commonly encountered in parts of Europe)
+    tr_tr: bool = False
+    tr_cy: bool = False
+    tr_bg: bool = False
+    tr_gr: bool = False
+    tr_mk: bool = False
     ru: bool = False  # Russian (widely understood in some regions)
+    ru_ru: bool = False
+    ru_by: bool = False
+    ru_kz: bool = False
+    ru_ua: bool = False
+    ru_md: bool = False
 
     # Misc / special flags
     brainrot: bool = False
+    brainrot_twitch: bool = False
+    brainrot_tiktok: bool = False
+    brainrot_gaming: bool = False
+    brainrot_alpha: bool = False
+    brainrot_discord: bool = False
     other: bool = False
 
 
 class Langs(Enum):
+    # English variants
+    EN = "en"
     EN_UK = "en_uk"
     EN_US = "en_us"
     EN_AU = "en_au"
 
+    # Romance languages
     FR = "fr"
+    FR_CA = "fr_ca"
     ES = "es"
-    DE = "de"
+    ES_ES = "es_es"
+    ES_MX = "es_mx"
+    ES_AR = "es_ar"
     IT = "it"
+    IT_IT = "it_it"
+    IT_CH = "it_ch"
     PT = "pt"
+    PT_PT = "pt_pt"
+    PT_BR = "pt_br"
+    PT_AO = "pt_ao"
+
+    # Germanic languages
+    DE = "de"
+    DE_DE = "de_de"
+    DE_AT = "de_at"
+    DE_CH = "de_ch"
     NL = "nl"
+    NL_NL = "nl_nl"
+    NL_BE = "nl_be"
+    NL_SR = "nl_sr"
 
+    # Central & Eastern European languages
     PL = "pl"
+    PL_PL = "pl_pl"
+    PL_UA = "pl_ua"
+    PL_LT = "pl_lt"
     RO = "ro"
+    RO_RO = "ro_ro"
+    RO_MD = "ro_md"
+    RO_RS = "ro_rs"
     HU = "hu"
+    HU_HU = "hu_hu"
+    HU_AT = "hu_at"
+    HU_SK = "hu_sk"
+    HU_RS = "hu_rs"
 
+    # Nordic languages
     SV = "sv"
+    SV_SE = "sv_se"
+    SV_FI = "sv_fi"
+    SV_NO = "sv_no"
+    SV_DK = "sv_dk"
     DA = "da"
+    DA_DK = "da_dk"
+    DA_SE = "da_se"
+    DA_NO = "da_no"
+    DA_GL = "da_gl"
     NO = "no"
+    NO_NO = "no_no"
+    NO_SE = "no_se"
+    NO_DK = "no_dk"
+    NO_SA = "no_sa"
     FI = "fi"
+    FI_FI = "fi_fi"
+    FI_SE = "fi_se"
+    FI_RU = "fi_ru"
+    FI_EE = "fi_ee"
+
+    # Southern European languages
     EL = "el"
+    EL_GR = "el_gr"
+    EL_CY = "el_cy"
+    EL_TR = "el_tr"
+    EL_IT = "el_it"
+    EL_AL = "el_al"
 
+    # Other commonly encountered languages
     TR = "tr"
+    TR_TR = "tr_tr"
+    TR_CY = "tr_cy"
+    TR_BG = "tr_bg"
+    TR_GR = "tr_gr"
+    TR_MK = "tr_mk"
     RU = "ru"
+    RU_RU = "ru_ru"
+    RU_BY = "ru_by"
+    RU_KZ = "ru_kz"
+    RU_UA = "ru_ua"
+    RU_MD = "ru_md"
 
+    # Brainrot (Gen Alpha internet slang)
     BRAINROT = "brainrot"
+    BRAINROT_TWITCH = "brainrot_twitch"
+    BRAINROT_TIKTOK = "brainrot_tiktok"
+    BRAINROT_GAMING = "brainrot_gaming"
+    BRAINROT_ALPHA = "brainrot_alpha"
+    BRAINROT_DISCORD = "brainrot_discord"
+
     OTHER = "other"
 
 
