@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: pyproject.toml
 # CREATION DATE: 13-03-2026
-# LAST Modified: 14:11:15 21-03-2026
+# LAST Modified: 19:25:48 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -37,10 +37,16 @@ requires = ["setuptools >= 80.9.0", "wheel >= 0.36.2", "pep517 >= 0.11.0"]
 build-backend = "setuptools.build_meta"
 
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 # Include the top-level package and any of its subpackages (polyguard.src, etc.)
 include = ["polyguard", "polyguard.*"]
 exclude = ["lenv", "menv", "wenv", "env", "venv", ".env", ".venv"]
+
+[tool.setuptools.package-data]
+polyguard = ["data/*.sqlite"]
 
 [project]
 name = "polyguard"

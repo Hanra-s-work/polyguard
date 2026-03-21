@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: constants.py
 # CREATION DATE: 20-03-2026
-# LAST Modified: 18:39:49 21-03-2026
+# LAST Modified: 19:16:27 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -40,7 +40,7 @@ MODULE_ROOT = Path(__file__).resolve().parent.parent
 
 # Default location for the SQLite database inside the package `data` folder.
 # Callers may override this value when constructing `PolyGuard`.
-DEFAULT_DB_PATH = MODULE_ROOT / "data" / "polyguard.db"
+DEFAULT_DB_PATH = MODULE_ROOT / "data" / "polyguard.sqlite"
 
 DEFAULT_SOURCE_WORDS = MODULE_ROOT.parent / "wordlists"
 
