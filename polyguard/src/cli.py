@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: cli.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 16:1:59 21-03-2026
+# LAST Modified: 16:14:42 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -91,7 +91,7 @@ class CLI:
 
     def cmd_log(self, tokens: list[str]) -> bool:
         if len(tokens) != 2:
-            print("Usage: :log <on|off>")
+            print(f"Usage: {POLY_CONST.COMMAND_TOKEN}log <on|off>")
             return True
         val = tokens[1].lower() in ("on", "1", "true", "yes")
         self.guard.log = val
@@ -102,7 +102,7 @@ class CLI:
 
     def cmd_langopt(self, tokens: list[str]) -> bool:
         if len(tokens) != 3:
-            print("Usage: :langopt <lang> <on|off>")
+            print(f"Usage: {POLY_CONST.COMMAND_TOKEN}langopt <lang> <on|off>")
             return True
         lang_token = tokens[1]
         lang_enum = _resolve_lang(lang_token)
@@ -142,14 +142,18 @@ class CLI:
                 enabled = bool(getattr(self.guard.default_choice, lang_code))
             except Exception:
                 enabled = False
-            mark = "[enabled]" if enabled else ""
+            mark = ""
+            if enabled:
+                mark = "[enabled]"
             entries.append(f"{lang_code}({count}){mark}")
 
         max_width = 80
         line = []
         cur_len = 0
         for e in entries:
-            add_len = len(e) + (2 if line else 0)
+            add_len = len(e)
+            if line:
+                add_len += 2
             if cur_len + add_len > max_width and line:
                 print(", ".join(line))
                 line = [e]
@@ -173,12 +177,15 @@ class CLI:
                 enabled = bool(getattr(self.guard.default_choice, lang.value))
             except Exception:
                 enabled = False
-            print(f"{lang.value}: {'on' if enabled else 'off'}")
+            status = "off"
+            if enabled:
+                status = "on"
+            print(f"{lang.value}: {status}")
         return True
 
     def cmd_word(self, tokens: list[str]) -> bool:
         if len(tokens) < 2:
-            print("Usage: :word <word> [<lang>]")
+            print(f"Usage: {POLY_CONST.COMMAND_TOKEN}word <word> [<lang>]")
             return True
 
         # Support multi-word phrases. If the final token resolves to a language,
@@ -202,14 +209,20 @@ class CLI:
                 return True
             try:
                 found = self.guard.sqlite.has_word(lang_enum, word)
-                print(POLY_CONST.STATUS_BLOCKED if found else POLY_CONST.STATUS_OK)
+                if found:
+                    print(POLY_CONST.STATUS_BLOCKED)
+                else:
+                    print(POLY_CONST.STATUS_OK)
             except Exception as exc:
                 print(f"DB query failed: {exc}")
             return True
 
         # No explicit language requested; use current config (supports phrases)
         result = self.guard.is_a_swearword(word)
-        print(POLY_CONST.STATUS_BLOCKED if result else POLY_CONST.STATUS_OK)
+        if result:
+            print(POLY_CONST.STATUS_BLOCKED)
+        else:
+            print(POLY_CONST.STATUS_OK)
         return True
 
     def repl(self) -> int:
@@ -228,14 +241,17 @@ class CLI:
                 text = text.strip()
 
                 # Commands are prefixed with ':' to avoid clashing with words to check
-                if not text.startswith(":"):
+                if not text.startswith(POLY_CONST.COMMAND_TOKEN):
                     # Treat entire input as a word to check
                     result = self.guard.is_a_swearword(text)
-                    print(POLY_CONST.STATUS_BLOCKED if result else POLY_CONST.STATUS_OK)
+                    if result:
+                        print(POLY_CONST.STATUS_BLOCKED)
+                    else:
+                        print(POLY_CONST.STATUS_OK)
                     continue
 
                 # Remove prefix and split into tokens for command dispatch
-                cmd_body = text[1:]
+                cmd_body = text[POLY_CONST.COMMAND_TOKEN_LENGTH:]
                 tokens = cmd_body.split()
                 if not tokens:
                     continue
@@ -253,8 +269,11 @@ class CLI:
                     continue
 
                 if base == "db":
-                    print(POLY_CONST.DB_PATH_FMT.format(
-                        path=self.guard.db_path))
+                    print(
+                        POLY_CONST.DB_PATH_FMT.format(
+                            path=self.guard.db_path
+                        )
+                    )
                     continue
 
                 # Dispatch other commands to dedicated handlers
@@ -290,10 +309,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="polyguard", description="Run PolyGuard checks from the TTY or stdin")
 
-    parser.add_argument("--db-path", default=None,
-                        help="Path to SQLite DB (overrides package default)")
-    parser.add_argument("--word", default=None,
-                        help="A single word to test for being a swearword")
+    parser.add_argument(
+        "--db-path",
+        default=None,
+        help="Path to SQLite DB (overrides package default)"
+    )
+    parser.add_argument(
+        "--word",
+        default=None,
+        help="A single word to test for being a swearword"
+    )
 
     args = parser.parse_args(argv)
 
