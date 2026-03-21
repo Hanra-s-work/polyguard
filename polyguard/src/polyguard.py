@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: polyguard.py
 # CREATION DATE: 13-03-2026
-# LAST Modified: 1:10:32 21-03-2026
+# LAST Modified: 14:47:29 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -31,7 +31,11 @@
 
 import sys
 from typing import Any, Optional
+from threading import Lock
+from collections import OrderedDict
 
+import sqlite3
+from display_tty import Disp, initialise_logger
 from warnings import warn
 
 from . import constants as POLY_CONST
@@ -39,7 +43,21 @@ from .sqlite_handler import SQLiteHandler
 
 
 class PolyGuard:
+
+    _instance: Optional["PolyGuard"] = None
+    _class_lock: Lock = Lock()
+    disp: Disp = initialise_logger(__qualname__, False)
+
+    def __new__(cls, *args, **kwargs) -> "PolyGuard":
+        with cls._class_lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls, *args, **kwargs)
+        return cls._instance
+
     def __init__(self, langs: POLY_CONST.LangConfig, db_path: str | None = None, success: int = 0, error: int = 1, log: bool = True, debug: bool = False) -> None:
+        # Lock instance to prevent racing calls
+        self._function_lock: Lock = Lock()
+        # Inherited calls
         self.success = success
         self.error = error
         self.log = log
@@ -53,19 +71,152 @@ class PolyGuard:
 
         # Lazy SQLite handler; do not connect automatically.
         self.sqlite: SQLiteHandler | None = None
+        # Indicates whether the configured DB was successfully probed.
+        self._db_ready: bool = False
+        self.disp.update_disp_debug(debug=debug)
+        # LRU cache for loaded languages -> set(words)
+        self._cache_limit: int = int(POLY_CONST.DEFAULT_CACHE_MAX_LANGS)
+        self._lang_cache: "OrderedDict[POLY_CONST.Langs, set]" = OrderedDict()
+
+        self.disp.log_info(
+            f"PolyGuard initialised; db_path={self.db_path}; cache_limit={self._cache_limit}")
 
     def __call__(self, *args: Any, **kwds: Any) -> int:
         return self.main()
 
     def is_a_swearword(self, word: str, *, languages_to_check: Optional[POLY_CONST.LangConfig] = None) -> bool:
-        warn("This function is not yet implemented, it is here so you can put it in you code, it will return false as to not prevent flow run")
+        self.disp.log_debug(f"is_a_swearword called with word={word!r}")
+
+        # Quick sanity checks
+        if word is None:
+            return False
+
+        text = word.strip()
+
+        if not text:
+            return False
+
+        # Resolve languages to check
+        languages = languages_to_check or self.default_choice
+
+        # Build list of languages enabled in the provided config
+        to_check = []
+        for lang in POLY_CONST.Langs:
+            try:
+                if getattr(languages, lang.value):
+                    to_check.append(lang)
+            except AttributeError:
+                continue
+
+        if not to_check:
+            return False
+
+        # First consult in-memory cache under short lock sections
+        missing = []
+        for lang in to_check:
+            with self._function_lock:
+                cached = self._lang_cache.get(lang)
+                if cached is not None:
+                    # mark as recently used
+                    try:
+                        self._lang_cache.move_to_end(lang)
+                    except (KeyError, AttributeError):
+                        pass
+
+                    if text.lower() in cached:
+                        self.disp.log_debug(f"Cache hit for lang={lang.value}")
+                        return True
+                else:
+                    missing.append(lang)
+
+        if not missing:
+            return False
+
+        # Load missing languages from DB outside the instance lock
+        try:
+            with SQLiteHandler(str(self.db_path), readonly=True, log=self.log) as handler:
+                loaded = {}
+                for lang in missing:
+                    words = handler.get_words(lang)
+                    loaded[lang] = words
+
+        except (sqlite3.Error, RuntimeError) as exc:  # pragma: no cover - defensive
+            self.disp.log_error(f"DB access failed in is_a_swearword: {exc}")
+            if self.log:
+                warn(f"PolyGuard DB access failed: {exc}")
+            return False
+
+        # Update cache under lock and test loaded sets
+        for lang, words in loaded.items():
+            with self._function_lock:
+                self._lang_cache[lang] = words
+                try:
+                    self._lang_cache.move_to_end(lang)
+                except (KeyError, AttributeError):
+                    pass
+
+                # Enforce cache size limit
+                while len(self._lang_cache) > self._cache_limit:
+                    try:
+                        evicted_lang, _ = self._lang_cache.popitem(last=False)
+                        self.disp.log_debug(
+                            f"Evicted lang from cache: {evicted_lang.value}")
+                    except (KeyError, IndexError):
+                        break
+
+            if text.lower() in words:
+                self.disp.log_debug(
+                    f"Match found after DB load for lang={lang.value}")
+                return True
+
         return False
 
     def main(self) -> int:
-        warn("This function is not implemented yet, it will return 0 as a default response, this is the one you call to initialise lang loading.")
-        return 0
+        # Probe the configured DB to ensure it is accessible and usable.
+        self.disp.log_debug("main() called to probe DB")
+
+        try:
+            with SQLiteHandler(str(self.db_path), readonly=True, log=self.log) as handler:
+                # Simple probe: attempt a lightweight query. Using first enum value
+                # ensures the table can be queried; absence of rows is acceptable.
+                _ = handler.get_words(next(iter(POLY_CONST.Langs)))
+
+                # Optionally preload enabled languages into cache up to the cache limit
+                to_preload = []
+                for lang in POLY_CONST.Langs:
+                    try:
+                        if getattr(self.default_choice, lang.value):
+                            to_preload.append(lang)
+                    except AttributeError:
+                        continue
+
+                loaded_count = 0
+                for lang in to_preload:
+                    if loaded_count >= self._cache_limit:
+                        break
+                    words = handler.get_words(lang)
+                    with self._function_lock:
+                        self._lang_cache[lang] = words
+                        try:
+                            self._lang_cache.move_to_end(lang)
+                        except (KeyError, AttributeError):
+                            pass
+                        loaded_count += 1
+
+            self._db_ready = True
+            self.disp.log_info("DB probe successful; ready")
+            return self.success
+
+        except (sqlite3.Error, RuntimeError) as exc:  # pragma: no cover - defensive
+            self._db_ready = False
+            self.disp.log_error(f"DB probe failed: {exc}")
+            if self.log:
+                warn(f"PolyGuard failed to open DB '{self.db_path}': {exc}")
+
+            return self.error
 
 
 if __name__ == "__main__":
     CONF = POLY_CONST.LangConfig()
-    sys.exit(PolyGuard(CONF)())
+    instance = PolyGuard(langs=CONF)
+    sys.exit(instance())

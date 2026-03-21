@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: generate_db.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 1:20:52 21-03-2026
+# LAST Modified: 14:24:18 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # Build-time helper to generate the SQLite DB from plaintext word lists.
