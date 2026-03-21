@@ -27,7 +27,7 @@ class TestModulePaths:
     def test_default_db_path_structure(self):
         """Test that DEFAULT_DB_PATH is under data directory."""
         assert "data" in str(POLY_CONST.DEFAULT_DB_PATH)
-        assert str(POLY_CONST.DEFAULT_DB_PATH).endswith(".db")
+        assert str(POLY_CONST.DEFAULT_DB_PATH).endswith(".sqlite")
 
     def test_default_db_path_parent_exists(self):
         """Test that DEFAULT_DB_PATH parent directory exists."""
