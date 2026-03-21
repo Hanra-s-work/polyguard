@@ -15,6 +15,7 @@ name: polyguard-gh-packages
 # 1.0.12: Update code to use non-root containers if required.
 # 1.0.13: Update the flow to try and import the dependency after the build.
 # 1.0.14: Update the flow to avoid picking up -doc tags for documentation
+# 1.0.14-commando: Update the flow to build the set of words before compiling to a library
 
 on:
   push:
@@ -29,8 +30,7 @@ permissions:
   id-token: write
 
 env:
-  CWD: "./py_hello_world_lib"
-  SETUP_FILE: setup.py
+  CWD: "."
   TOML_SETUP_FILE: pyproject.toml
   TAG_FILE: version.txt
   IS_RELEASE: is_release.txt
@@ -86,17 +86,10 @@ jobs:
         run: |
           cd ${{env.CWD}}
           latest_tag="$(cat ${{env.TAG_FILE}})"
-          echo "Updating version in ${{env.SETUP_FILE}}"
           echo -e "\n\n\n\n\n\n\n\n\n"
           echo "Tag: $latest_tag"
           latest_tag=${latest_tag/"v"/""}
           echo "Tag: $latest_tag"
-          if [ -f ${{env.SETUP_FILE}} ] ; then
-            echo "Updating the version in ${{env.SETUP_FILE}}"
-            sed -i "s/version='.*'/version='$latest_tag'/g" ${{env.SETUP_FILE}}
-            sed -i "s/version = '.*'/version = '$latest_tag'/g" ${{env.SETUP_FILE}}
-            echo "Content of file: $(cat ${{env.SETUP_FILE}})"
-          fi
           if [ -f ${{env.TOML_SETUP_FILE}} ]; then
             echo "Updating the version in ${{env.TOML_SETUP_FILE}}"
             sed -i "s/version='.*'/version='$latest_tag'/g" ${{env.TOML_SETUP_FILE}}
@@ -132,6 +125,13 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
+      - name: Install uv
+        run: |
+          pip install uv
+      - name: Compile language set
+        run: |
+          cd ${{env.CWD}}
+          uv run polyguard-generate-db
       - name: building the package
         run: |
           cd ${{env.CWD}}

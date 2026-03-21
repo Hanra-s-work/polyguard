@@ -13,11 +13,13 @@ name: run_unit_tests
 # 1.0.8: Update code to use non-root containers if required.
 # 1.0.9: Update the code to try and import package once built
 # 1.0.10: Add python version 3.14 to the set of tests
+# 1.0.10-commando: Update the flow to build the language set before testing
 
 on:
   push:
     tags:
       - "v*.*.*"
+      - "!v*.*.*-doc"
     branches:
       - main
   pull_request:
@@ -67,6 +69,14 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Compiling the language set
+        run: |
+          cd ${{env.CWD}}
+          uv run polyguard-generate-db
       - name: building the package
         run: |
           cd ${{env.CWD}}

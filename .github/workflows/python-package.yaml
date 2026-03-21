@@ -13,6 +13,7 @@ name: polyguard-pypi
 # 1.0.9: Update code to use python slim containers instead of full fledged ubuntu containers.
 # 1.0.10: Update the flow to try and import the dependency after the build.
 # 1.0.11: Update the flow to avoid picking up -doc tags for documentation
+# 1.0.11-commando: Update the flow to build the set of words before compiling the library
 
 on:
   push:
@@ -23,7 +24,6 @@ on:
 
 env:
   CWD: "."
-  SETUP_FILE: setup.py
   TOML_SETUP_FILE: pyproject.toml
   TAG_FILE: version.txt
   IS_RELEASE: is_release.txt
@@ -79,17 +79,10 @@ jobs:
         run: |
           cd ${{env.CWD}}
           latest_tag="$(cat ${{env.TAG_FILE}})"
-          echo "Updating version in ${{env.SETUP_FILE}}"
           echo -e "\n\n\n\n\n\n\n\n\n"
           echo "Tag: $latest_tag"
           latest_tag=${latest_tag/"v"/""}
           echo "Tag: $latest_tag"
-          if [ -f ${{env.SETUP_FILE}} ] ; then
-            echo "Updating the version in ${{env.SETUP_FILE}}"
-            sed -i "s/version='.*'/version='$latest_tag'/g" ${{env.SETUP_FILE}}
-            sed -i "s/version = '.*'/version = '$latest_tag'/g" ${{env.SETUP_FILE}}
-            echo "Content of file: $(cat ${{env.SETUP_FILE}})"
-          fi
           if [ -f ${{env.TOML_SETUP_FILE}} ]; then
             echo "Updating the version in ${{env.TOML_SETUP_FILE}}"
             sed -i "s/version='.*'/version='$latest_tag'/g" ${{env.TOML_SETUP_FILE}}
@@ -124,6 +117,15 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Compile language set
+        run: |
+          cd ${{env.CWD}}
+          uv run polyguard-generate-db
 
       - name: building the package
         run: |
