@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: sqlite_handler.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 19:42:17 21-03-2026
+# LAST Modified: 19:51:7 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -56,6 +56,17 @@ class SQLiteHandler:
         return cls._instance
 
     def __init__(self, db_path: str, readonly: bool = True, *, log: bool = True, debug: bool = False) -> None:
+        """Initialize SQLite connection handler.
+
+        Sets up connection parameters but does not open the connection until
+        connect() is called. Supports both read-only and read-write modes.
+
+        Args:
+            db_path: Path to SQLite database file.
+            readonly: If True, opens database in read-only mode. Defaults to True.
+            log: If True, enables logging of database operations. Defaults to True.
+            debug: If True, enables debug-level logging. Defaults to False.
+        """
         self.db_path = db_path
         self.readonly = readonly
         # Caller controllable logging flag
@@ -66,11 +77,15 @@ class SQLiteHandler:
         self.disp.update_disp_debug(debug)
 
     def connect(self) -> None:
-        """Open the SQLite connection.
+        """Open SQLite database connection.
 
-        If `readonly` is True the connection attempts to open in read-only mode
-        using SQLite URI syntax. If that fails (file missing), an exception
-        will be raised.
+        If readonly mode is enabled, uses SQLite URI syntax to open in read-only
+        mode. Enables check_same_thread=False to allow multithreaded access
+        (concurrency is controlled by instance lock). If already connected,
+        this method is a no-op.
+
+        Raises:
+            sqlite3.DatabaseError: When connection fails (e.g., file not found in readonly mode).
         """
         with self._lock:
             if self._conn is not None:
@@ -103,6 +118,10 @@ class SQLiteHandler:
                 self.disp.log_info("SQLite connection opened")
 
     def close(self) -> None:
+        """Close SQLite database connection.
+
+        If not connected, this method is a no-op. Safe to call multiple times.
+        """
         with self._lock:
             if self._conn is None:
                 return
@@ -117,14 +136,32 @@ class SQLiteHandler:
                     self.disp.log_info("SQLite connection closed")
 
     def __enter__(self) -> "SQLiteHandler":
+        """Context manager entry: open database connection.
+
+        Returns:
+            SQLiteHandler: This instance with connection open.
+        """
         self.connect()
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
+        """Context manager exit: close database connection.
+
+        Closes connection regardless of whether an exception occurred.
+        """
         self.close()
 
     def create_schema(self) -> None:
-        """Create the words table if it does not exist. Requires a writeable connection."""
+        """Create words table if not already present.
+
+        Creates a table with columns (lang TEXT, word TEXT) and a composite
+        primary key on (lang, word). Idempotent — safe to call on existing tables.
+        Requires a writable database connection.
+
+        Raises:
+            RuntimeError: When connection is not open.
+            sqlite3.Error: When table creation fails.
+        """
         with self._lock:
             if self._conn is None:
                 raise RuntimeError("Connection is not open")
@@ -148,9 +185,21 @@ class SQLiteHandler:
                 self.disp.log_info("Schema ensured")
 
     def bulk_insert(self, mapping: Dict[POLY_CONST.Langs, Iterable[str]]) -> int:
-        """Insert many words from a mapping Lang -> iterable(words).
+        """Bulk insert words from language to words mapping.
 
-        Returns the number of rows inserted (new unique entries).
+        Normalizes and inserts words from each language. Uses INSERT OR IGNORE
+        to skip duplicate (lang, word) pairs. Returns cumulative row count
+        across all languages provided (sum of per-language totals, not insert count).
+
+        Args:
+            mapping: Dictionary mapping Langs enums to iterables of words.
+
+        Returns:
+            int: Sum of word counts across all languages in mapping after insert.
+
+        Raises:
+            RuntimeError: When connection is not open.
+            sqlite3.Error: When database operation fails (transaction is rolled back).
         """
         with self._lock:
             if self._conn is None:
@@ -222,9 +271,18 @@ class SQLiteHandler:
             return inserted
 
     def get_words(self, lang: POLY_CONST.Langs) -> Set[str]:
-        """Return a set of words for the given language.
+        """Retrieve all words for a specific language from database.
 
-        If the DB is empty or lang is missing, returns an empty set.
+        Returns an empty set if the database is empty or the language has no entries.
+
+        Args:
+            lang: Langs enum member specifying which language to retrieve.
+
+        Returns:
+            Set[str]: Set of all words for the language.
+
+        Raises:
+            RuntimeError: When connection is not open.
         """
         with self._lock:
             if self._conn is None:
@@ -258,9 +316,16 @@ class SQLiteHandler:
             return result
 
     def list_languages(self) -> Dict[str, int]:
-        """Return a mapping of language code -> number of words present in the DB.
+        """List all languages and their word counts in database.
 
-        Returns an empty dict if the DB is empty or the table is missing.
+        Queries all distinct language codes and returns a mapping of code to word count.
+        Returns an empty dict if the database is empty or the words table is missing.
+
+        Returns:
+            Dict[str, int]: Mapping of language code strings to word counts.
+
+        Raises:
+            RuntimeError: When connection is not open.
         """
         with self._lock:
             if self._conn is None:
@@ -293,7 +358,21 @@ class SQLiteHandler:
             return result
 
     def has_word(self, lang: POLY_CONST.Langs, word: str) -> bool:
-        """Return True if given word exists for language."""
+        """Check if a word exists in a specific language.
+
+        Normalizes the input word (lowercase, strip whitespace) before checking.
+        Returns False for empty or whitespace-only inputs.
+
+        Args:
+            lang: Langs enum member specifying which language to search.
+            word: Word string to check.
+
+        Returns:
+            bool: True if word is present for the language, False otherwise.
+
+        Raises:
+            RuntimeError: When connection is not open.
+        """
         with self._lock:
             if self._conn is None:
                 raise RuntimeError("Connection is not open")

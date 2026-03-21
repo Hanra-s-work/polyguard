@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: generate_db.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 16:58:4 21-03-2026
+# LAST Modified: 19:51:5 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # Build-time helper to generate the SQLite DB from plaintext word lists.
@@ -36,7 +36,7 @@
 """
 
 import os
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Optional
 import argparse
 from display_tty import Disp, initialise_logger
 
@@ -48,9 +48,22 @@ IDISP: Disp = initialise_logger("Generate DB", False)
 
 
 def build_db_from_dir(source_dir: str, db_path: str) -> int:
-    """Scan `source_dir` for .txt files and write them into `db_path`.
+    """Scan directory for .txt files and populate SQLite database.
 
-    Returns the number of languages processed.
+    Scans `source_dir` for .txt wordlist files, normalizes each one, and
+    inserts the words into the SQLite database at `db_path`. File stems are
+    mapped to Langs enum values; unmapped stems default to Langs.OTHER.
+
+    Args:
+        source_dir: Path to directory containing .txt wordlist files.
+        db_path: Path where SQLite database will be created or updated.
+
+    Returns:
+        int: Number of language files processed.  Returns 0 if no files found.
+
+    Raises:
+        OSError: When source directory cannot be read.
+        sqlite3.Error: When database operations fail.
     """
     files = []
 
@@ -121,7 +134,18 @@ def build_db_from_dir(source_dir: str, db_path: str) -> int:
     return len(mapping)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: Optional[list[str]] = None) -> int:
+    """CLI entrypoint for database generation from wordlists.
+
+    Parses command-line arguments for source directory and output database path,
+    then invokes build_db_from_dir() to populate the database.
+
+    Args:
+        argv: Optional list of command-line arguments. If None, uses sys.argv.
+
+    Returns:
+        int: Exit code (0 for success).
+    """
     parser = argparse.ArgumentParser(
         description="Generate polyguard SQLite DB from text lists")
 

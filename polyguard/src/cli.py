@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: cli.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 19:42:29 21-03-2026
+# LAST Modified: 19:47:9 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -42,6 +42,16 @@ from .polyguard import PolyGuard
 
 
 def _iter_input_lines(stream: Iterable[str]):
+    """Iterate over lines from a stream, yielding non-empty lines.
+
+    Strips trailing newlines from each line before yielding.
+
+    Args:
+        stream: Iterable of strings (e.g., from sys.stdin).
+
+    Yields:
+        str: Non-empty lines with trailing newlines removed.
+    """
     for line in stream:
         text = line.rstrip("\n")
         if text:
@@ -78,6 +88,14 @@ class CLI:
         self.guard = guard
 
     def run_single(self, word: str) -> int:
+        """Check a single word and print the result.
+
+        Args:
+            word: The word to check.
+
+        Returns:
+            int: Always returns 0.
+        """
         is_swear = self.guard.is_a_swearword(word)
         status = POLY_CONST.STATUS_OK
         if is_swear:
@@ -86,6 +104,13 @@ class CLI:
         return 0
 
     def run_stdin(self) -> int:
+        """Read lines from stdin and check each for profanity.
+
+        Outputs 'BLOCKED' or 'OK' for each line.
+
+        Returns:
+            int: Always returns 0.
+        """
         for line in _iter_input_lines(sys.stdin):
             result = self.guard.is_a_swearword(line)
             if result:
@@ -95,6 +120,17 @@ class CLI:
         return 0
 
     def cmd_log(self, tokens: list[str]) -> bool:
+        """Toggle logging output on or off.
+
+        Parses 'on' or 'off' from the second token and updates the guard and
+        sqlite handler's logging flags.
+
+        Args:
+            tokens: Command tokens where tokens[1] should be 'on' or 'off'.
+
+        Returns:
+            bool: Always returns True (command processed).
+        """
         if len(tokens) != 2:
             print(f"Usage: {POLY_CONST.COMMAND_TOKEN}log <on|off>")
             return True
@@ -109,6 +145,18 @@ class CLI:
         return True
 
     def cmd_langopt(self, tokens: list[str]) -> bool:
+        """Enable or disable a specific language in the PolyGuard configuration.
+
+        Parses language code from tokens[1] and 'on'/'off' status from tokens[2],
+        then updates the guard's language configuration.
+
+        Args:
+            tokens: Command tokens where tokens[1] is language and tokens[2]
+                is 'on' or 'off'.
+
+        Returns:
+            bool: Always returns True (command processed).
+        """
         if len(tokens) != 3:
             print(f"Usage: {POLY_CONST.COMMAND_TOKEN}langopt <lang> <on|off>")
             return True
@@ -131,6 +179,17 @@ class CLI:
         return True
 
     def cmd_langs(self, tokens: list[str]) -> bool:
+        """List all available languages in the database with word counts.
+
+        Displays languages compactly on lines of ~80 characters, marking
+        enabled languages with [enabled] tag.
+
+        Args:
+            tokens: Command tokens (not used).
+
+        Returns:
+            bool: Always returns True (command processed).
+        """
         if not self.guard.ensure_connection():
             print("No DB connection available")
             return True
@@ -183,6 +242,17 @@ class CLI:
         return True
 
     def cmd_langstatus(self, tokens: list[str]) -> bool:
+        """Display the current enabled/disabled status of all languages.
+
+        Lists each language code with its current 'on' or 'off' status as
+        determined by the guard's default language configuration.
+
+        Args:
+            tokens: Command tokens (not used).
+
+        Returns:
+            bool: Always returns True (command processed).
+        """
         for lang in POLY_CONST.Langs:
             try:
                 enabled = bool(getattr(self.guard.default_choice, lang.value))
@@ -195,6 +265,19 @@ class CLI:
         return True
 
     def cmd_word(self, tokens: list[str]) -> bool:
+        """Check a word, optionally for a specific language.
+
+        Supports multi-word phrases. If the final token matches a known language,
+        it is treated as the language filter. Returns the match status and any
+        matched words from the database (if a specific language is given).
+
+        Args:
+            tokens: Command tokens where tokens[1:] is the word/phrase and
+                tokens[-1] may be a language code.
+
+        Returns:
+            bool: Always returns True (command processed).
+        """
         if len(tokens) < 2:
             print(f"Usage: {POLY_CONST.COMMAND_TOKEN}word <word> [<lang>]")
             return True
@@ -237,6 +320,15 @@ class CLI:
         return True
 
     def repl(self) -> int:
+        """Run the interactive CLI REPL loop.
+
+        Accepts user input for words to check or colon-prefixed commands.
+        Supports batch processing from stdin and interactive commands like
+        ':log', ':langopt', ':langs', ':langstatus', ':word', ':help', ':man'.
+
+        Returns:
+            int: Always returns 0 on normal exit or interrupt.
+        """
         print(POLY_CONST.POLY_BOOT_MSG)
 
         try:
@@ -317,6 +409,17 @@ class CLI:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    """CLI entrypoint for PolyGuard.
+
+    Dispatches to single-word check, stdin batch processing, or interactive
+    REPL based on arguments and whether stdin is a TTY.
+
+    Args:
+        argv: Optional list of command-line arguments. If None, uses sys.argv.
+
+    Returns:
+        int: Exit code (0 for success, non-zero for error).
+    """
     parser = argparse.ArgumentParser(
         prog="polyguard", description="Run PolyGuard checks from the TTY or stdin")
 

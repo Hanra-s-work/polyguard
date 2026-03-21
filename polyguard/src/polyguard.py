@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: polyguard.py
 # CREATION DATE: 13-03-2026
-# LAST Modified: 19:31:43 21-03-2026
+# LAST Modified: 19:45:40 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -43,6 +43,17 @@ from .sqlite_handler import SQLiteHandler
 
 
 class PolyGuard:
+    """Singleton profanity filter with multilingual support and LRU caching.
+
+    Manages a persistent connection to an SQLite database of language-specific
+    word lists. Provides thread-safe word detection with per-language caching
+    to optimize repeated lookups. Supports configurable language subsets and
+    can check single words or phrases.
+
+    Note:
+        This class uses the singleton pattern. Multiple instantiations return
+        the same instance.
+    """
 
     _instance: Optional["PolyGuard"] = None
     _class_lock: Lock = Lock()
@@ -55,6 +66,19 @@ class PolyGuard:
         return cls._instance
 
     def __init__(self, langs: POLY_CONST.LangConfig, db_path: Optional[str] = None, success: int = 0, error: int = 1, log: bool = True, debug: bool = False) -> None:
+        """Initialize the PolyGuard instance.
+
+        Args:
+            langs: LangConfig instance specifying which languages to check.
+            db_path: Path to the SQLite database. Uses package default if None.
+            success: Exit code for successful initialization (default 0).
+            error: Exit code for failures (default 1).
+            log: Enable logging output (default True).
+            debug: Enable debug-level logging (default False).
+
+        On first call, attempts to establish a persistent database connection.
+        If the connection fails, the instance will attempt to reconnect on demand.
+        """
         # Lock instance to prevent racing calls
         self._function_lock: Lock = Lock()
         # Inherited calls
@@ -86,9 +110,27 @@ class PolyGuard:
                 "Initial DB connection failed; will attempt on demand")
 
     def __call__(self, *args: Any, **kwds: Any) -> int:
+        """Callable interface. Delegates to main().
+
+        Returns:
+            int: Result code from main() (0 for success, non-zero for error).
+        """
         return self.main()
 
     def is_a_swearword(self, word: str, *, languages_to_check: Optional[POLY_CONST.LangConfig] = None) -> bool:
+        """Check if a word or phrase contains profanity.
+
+        Checks individual tokens in phrases and the full phrase itself.
+        Uses per-language LRU cache to optimize repeated lookups.
+
+        Args:
+            word: The word or phrase to check (whitespace-stripped).
+            languages_to_check: Optional LangConfig to override the default.
+                If None, uses the instance's default language configuration.
+
+        Returns:
+            bool: True if any enabled language contains the word, False otherwise.
+        """
         self.disp.log_debug(f"is_a_swearword called with word={word!r}")
 
         # Quick sanity checks
@@ -118,9 +160,20 @@ class PolyGuard:
         return self._check_token(text_low, languages)
 
     def _check_token(self, text_low: str, languages: POLY_CONST.LangConfig) -> bool:
-        """Internal helper that checks a single, already-lowercased token.
+        """Check if a single token exists in any enabled language's word list.
 
-        Returns True if token is found in enabled languages.
+        Internal method that performs the actual word lookup using cache and
+        database queries. Token must already be lowercased.
+
+        Args:
+            text_low: Lowercased token to search for.
+            languages: LangConfig specifying which languages to query.
+
+        Returns:
+            bool: True if token found in any enabled language, False otherwise.
+
+        Raises:
+            RuntimeError: If database connection becomes unavailable mid-check.
         """
         # Build list of languages enabled in the provided config
         to_check = []
@@ -201,6 +254,14 @@ class PolyGuard:
         return False
 
     def main(self) -> int:
+        """Probe the database and preload enabled languages into cache.
+
+        Attempts to verify database accessibility, then preloads up to
+        cache_limit languages into memory for faster lookup.
+
+        Returns:
+            int: success code (0) if DB is ready, error code otherwise.
+        """
         # Probe the configured DB to ensure it is accessible and usable.
         self.disp.log_debug("main() called to probe DB")
         # Ensure persistent connection
@@ -252,7 +313,11 @@ class PolyGuard:
     def ensure_connection(self) -> bool:
         """Ensure a persistent SQLiteHandler is created and connected.
 
-        Returns True if a usable connection exists, False otherwise.
+        Creates a new handler if needed or reconnects an existing one.
+        Cleans up stale connections gracefully.
+
+        Returns:
+            bool: True if connection is now open and usable, False otherwise.
         """
         with self._function_lock:
             if self.sqlite is not None:
