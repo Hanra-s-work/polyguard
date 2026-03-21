@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: sqlite_handler.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 15:30:45 21-03-2026
+# LAST Modified: 19:42:17 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -78,7 +78,8 @@ class SQLiteHandler:
 
             if self.log:
                 self.disp.log_debug(
-                    f"Opening SQLite connection (readonly={self.readonly}) to {self.db_path}")
+                    f"Opening SQLite connection (readonly={self.readonly}) to {self.db_path}"
+                )
 
             if self.readonly:
                 uri = f"file:{os.path.abspath(self.db_path)}?mode=ro"
@@ -86,10 +87,15 @@ class SQLiteHandler:
                 # concurrency with the instance lock instead of SQLite's
                 # thread-checking to support multithreaded callers.
                 self._conn = sqlite3.connect(
-                    uri, uri=True, check_same_thread=False)
+                    uri,
+                    uri=True,
+                    check_same_thread=False
+                )
             else:
                 self._conn = sqlite3.connect(
-                    self.db_path, check_same_thread=False)
+                    self.db_path,
+                    check_same_thread=False
+                )
 
             # Use default row factory (tuples) to keep behaviour explicit
             self._conn.row_factory = None
@@ -191,7 +197,9 @@ class SQLiteHandler:
                         continue
 
                     cur.execute(
-                        "SELECT COUNT(1) FROM words WHERE lang = ?", (lang_key.value,))
+                        "SELECT COUNT(1) FROM words WHERE lang = ?",
+                        (lang_key.value,)
+                    )
                     row = cur.fetchone()
 
                     if row is None:
@@ -202,7 +210,8 @@ class SQLiteHandler:
 
                 if self.log:
                     self.disp.log_info(
-                        f"Bulk insert complete; total rows (per-lang sum)={inserted}")
+                        f"Bulk insert complete; total rows (per-lang sum)={inserted}"
+                    )
 
             except sqlite3.Error as exc:
                 if self.log:
@@ -244,7 +253,8 @@ class SQLiteHandler:
 
             if self.log:
                 self.disp.log_info(
-                    f"Found {len(result)} words for lang={lang.value}")
+                    f"Found {len(result)} words for lang={lang.value}"
+                )
             return result
 
     def list_languages(self) -> Dict[str, int]:
@@ -269,7 +279,9 @@ class SQLiteHandler:
                 lang = row[0]
                 count = 0
                 try:
-                    count = int(row[1]) if row[1] is not None else 0
+                    count = 0
+                    if row[1] is not None:
+                        count = int(row[1])
                 except (ValueError, TypeError):
                     count = 0
 
@@ -295,15 +307,19 @@ class SQLiteHandler:
 
             if self.log:
                 self.disp.log_debug(
-                    f"Checking existence for word={text!r} in lang={lang.value}")
+                    f"Checking existence for word={text!r} in lang={lang.value}"
+                )
             cur.execute(
-                "SELECT 1 FROM words WHERE lang = ? AND word = ? LIMIT 1", (lang.value, text))
+                "SELECT 1 FROM words WHERE lang = ? AND word = ? LIMIT 1",
+                (lang.value, text)
+            )
 
             row = cur.fetchone()
 
             found = row is not None
             if found and self.log:
                 self.disp.log_info(
-                    f"Word matched: {text!r} (lang={lang.value})")
+                    f"Word matched: {text!r} (lang={lang.value})"
+                )
 
             return found

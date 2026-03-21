@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: cli.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 16:14:42 21-03-2026
+# LAST Modified: 19:42:29 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -79,14 +79,19 @@ class CLI:
 
     def run_single(self, word: str) -> int:
         is_swear = self.guard.is_a_swearword(word)
-        status = POLY_CONST.STATUS_BLOCKED if is_swear else POLY_CONST.STATUS_OK
+        status = POLY_CONST.STATUS_OK
+        if is_swear:
+            status = POLY_CONST.STATUS_BLOCKED
         print(f"{word}: {status}")
         return 0
 
     def run_stdin(self) -> int:
         for line in _iter_input_lines(sys.stdin):
             result = self.guard.is_a_swearword(line)
-            print(POLY_CONST.STATUS_BLOCKED if result else POLY_CONST.STATUS_OK)
+            if result:
+                print(POLY_CONST.STATUS_BLOCKED)
+            else:
+                print(POLY_CONST.STATUS_OK)
         return 0
 
     def cmd_log(self, tokens: list[str]) -> bool:
@@ -97,7 +102,10 @@ class CLI:
         self.guard.log = val
         if self.guard.sqlite is not None:
             self.guard.sqlite.log = val
-        print("Logging enabled" if val else "Logging disabled")
+        if val:
+            print("Logging enabled")
+        else:
+            print("Logging disabled")
         return True
 
     def cmd_langopt(self, tokens: list[str]) -> bool:
@@ -114,7 +122,10 @@ class CLI:
         val = tokens[2].lower() in ("on", "1", "true", "yes")
         try:
             setattr(self.guard.default_choice, lang_enum.value, val)
-            print(f"Set {lang_enum.value} {'enabled' if val else 'disabled'}")
+            status = "disabled"
+            if val:
+                status = "enabled"
+            print(f"Set {lang_enum.value} {status}")
         except Exception as exc:
             print(f"Failed to set language option: {exc}")
         return True

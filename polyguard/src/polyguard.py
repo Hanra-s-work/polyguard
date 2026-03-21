@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: polyguard.py
 # CREATION DATE: 13-03-2026
-# LAST Modified: 16:1:15 21-03-2026
+# LAST Modified: 19:31:43 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -54,7 +54,7 @@ class PolyGuard:
                 cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, langs: POLY_CONST.LangConfig, db_path: str | None = None, success: int = 0, error: int = 1, log: bool = True, debug: bool = False) -> None:
+    def __init__(self, langs: POLY_CONST.LangConfig, db_path: Optional[str] = None, success: int = 0, error: int = 1, log: bool = True, debug: bool = False) -> None:
         # Lock instance to prevent racing calls
         self._function_lock: Lock = Lock()
         # Inherited calls
@@ -70,7 +70,7 @@ class PolyGuard:
             self.db_path = db_path
 
         # Lazy SQLite handler; do not connect automatically.
-        self.sqlite: SQLiteHandler | None = None
+        self.sqlite: Optional[SQLiteHandler] = None
         # Indicates whether the configured DB was successfully probed.
         self._db_ready: bool = False
         self.disp.update_disp_debug(debug=debug)
