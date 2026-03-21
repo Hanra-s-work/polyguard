@@ -19,16 +19,13 @@
 # PROJECT: polyguard
 # FILE: sqlite_handler.py
 # CREATION DATE: 21-03-2026
-# LAST Modified: 14:46:58 21-03-2026
+# LAST Modified: 15:10:34 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
 # COPYRIGHT: (c) Henry Letellier
 # PURPOSE: SQLite handler for PolyGuard word-lists.
-This module provides a small, explicit handler to manage a read-only
-or read-write SQLite database containing (lang, word) rows. It keeps a
-connection open, exposes simple helpers for lookups and bulk inserts,
-and avoids inline comprehensions to favour legibility.
+# This module provides a small, explicit handler to manage a read-only or read-write SQLite database containing (lang, word) rows. It keeps a connection open, exposes simple helpers for lookups and bulk inserts, and avoids inline comprehensions to favour legibility.
 # // AR
 # +==== END polyguard =================+
 """
@@ -55,7 +52,7 @@ class SQLiteHandler:
     def __new__(cls, *args, **kwargs) -> "SQLiteHandler":
         with cls._class_lock:
             if cls._instance is None:
-                cls._instance = super().__new__(cls, *args, **kwargs)
+                cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self, db_path: str, readonly: bool = True, *, log: bool = True, debug: bool = False) -> None:
@@ -85,9 +82,14 @@ class SQLiteHandler:
 
             if self.readonly:
                 uri = f"file:{os.path.abspath(self.db_path)}?mode=ro"
-                self._conn = sqlite3.connect(uri, uri=True)
+                # Allow connections to be used from different threads; guard
+                # concurrency with the instance lock instead of SQLite's
+                # thread-checking to support multithreaded callers.
+                self._conn = sqlite3.connect(
+                    uri, uri=True, check_same_thread=False)
             else:
-                self._conn = sqlite3.connect(self.db_path)
+                self._conn = sqlite3.connect(
+                    self.db_path, check_same_thread=False)
 
             # Use default row factory (tuples) to keep behaviour explicit
             self._conn.row_factory = None

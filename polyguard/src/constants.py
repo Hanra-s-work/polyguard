@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: constants.py
 # CREATION DATE: 20-03-2026
-# LAST Modified: 14:43:33 21-03-2026
+# LAST Modified: 15:19:51 21-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -112,3 +112,33 @@ class Langs(Enum):
 
     BRAINROT = "brainrot"
     OTHER = "other"
+
+
+# REPL / CLI textual constants
+POLY_BOOT_MSG = (
+    "polyguard — interactive mode\n"
+    "Type 'help' for a short list of commands, 'man' for more details.\n"
+    "Enter a word to test it; 'exit' or 'quit' to leave."
+)
+
+POLY_HELP_TEXT = (
+    "Commands:\n"
+    "  help        Short help text (this message)\n"
+    "  man         Longer manual describing usage and options\n"
+    "  exit, quit  Leave the REPL\n"
+    "  db          Show configured DB path\n"
+    "  <word>      Check whether <word> is blocked (prints BLOCKED/OK)\n"
+)
+
+POLY_MAN_TEXT = (
+    "polyguard manual\n\n"
+    "This REPL accepts single-word queries and returns whether the word\n"
+    "is considered a swearword according to the configured language lists.\n\n"
+    "If started with --db-path, that DB will be used; otherwise the package\n"
+    "default DB is used. You can also pipe words via stdin for batch checks.\n"
+)
+
+POLY_PROMPT = "polyguard> "
+STATUS_BLOCKED = "BLOCKED"
+STATUS_OK = "OK"
+DB_PATH_FMT = f"DB path: {DEFAULT_DB_PATH}"
