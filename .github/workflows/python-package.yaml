@@ -83,16 +83,19 @@ jobs:
           echo "Tag: $latest_tag"
           latest_tag=${latest_tag/"v"/""}
           echo "Tag: $latest_tag"
+          
+          # Update pyproject.toml using sed
           if [ -f ${{env.TOML_SETUP_FILE}} ]; then
             echo "Updating the version in ${{env.TOML_SETUP_FILE}}"
-            sed -i "s/version='.*'/version='$latest_tag'/g" ${{env.TOML_SETUP_FILE}}
-            sed -i "s/version = '.*'/version = '$latest_tag'/g" ${{env.TOML_SETUP_FILE}}
-            echo "Content of file: $(cat ${{env.TOML_SETUP_FILE}})"
+            sed -i "s/version = '[^']*'/version = '$latest_tag'/g" ${{env.TOML_SETUP_FILE}}
+            echo "Updated content: $(grep version ${{env.TOML_SETUP_FILE}} | head -5)"
           fi
+          
+          # Update source code version
           if [ -f ${{env.SOURCE_CODE_PATH}} ]; then
             echo "Updating the version in ${{env.SOURCE_CODE_PATH}}"
-            sed -i "s/self.__version__ = '.*'/self.__version__ = '$latest_tag'/g" ${{env.SOURCE_CODE_PATH}}
-            echo "Content of file: $(cat ${{env.SOURCE_CODE_PATH}})"
+            sed -i "s/self.__version__ = '[^']*'/self.__version__ = '$latest_tag'/g" ${{env.SOURCE_CODE_PATH}}
+            echo "Updated version line: $(grep __version__ ${{env.SOURCE_CODE_PATH}})"
           fi
           echo "Content: $(ls)"
           echo -e "\n\n\n\n\n\n\n\n\n"
