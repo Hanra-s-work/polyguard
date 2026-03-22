@@ -19,7 +19,7 @@
 -- PROJECT: polyguard
 -- FILE: README.md
 -- CREATION DATE: 13-03-2026
--- LAST Modified: 23:53:25 13-03-2026
+-- LAST Modified: 3:48:28 22-03-2026
 -- DESCRIPTION:
 -- A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 -- /STOP
@@ -108,26 +108,86 @@ from polyguard import PolyGuard
 
 ### Initialising
 
-The generic class is: `PolyGuard(success: int = 0, error: int = 1, log: bool = True, debug: bool = False)`
-
-For your convenience, you can initialize the class with default parameters:
+To initialize PolyGuard, you need to create a language configuration and pass it to the constructor:
 
 ```py
-from polyguard import PolyGuard
-ERROR = 1
-SUCCESS = 0
-LOG=True
-DEBUG=False
+from polyguard.src.polyguard import PolyGuard
+from polyguard.src.constants import LangConfig
 
+# Create a language configuration (enable desired languages)
+lang_config = LangConfig()
+# By default, all supported languages are enabled
+
+# Initialize PolyGuard with optional parameters
 polyguard_instance = PolyGuard(
-    SUCCESS,
-    ERROR,
-    COLOUR_LIB,
-    LOG,
-    DEBUG
+    langs=lang_config,
+    db_path=None,  # Uses default package database if None
+    success=0,     # Exit code for success
+    error=1,       # Exit code for error
+    log=True,      # Enable logging
+    debug=False    # Enable debug-level logging
 )
-polyguard_instance()
 ```
+
+### Usage Examples
+
+Once initialized, you can use the following methods:
+
+```py
+# Check if a word is profanity (returns bool)
+if polyguard_instance.is_a_swearword("hello world"):
+    print("Contains profanity")
+else:
+    print("Clean text")
+
+# Extract the first matching swearword (returns Optional[str])
+offending_word = polyguard_instance.extract_swearword_if_present("some bad word here")
+if offending_word:
+    print(f"Found profanity: {offending_word}")
+
+# Get all swearwords for enabled languages (returns Dict[str, Set])
+all_words = polyguard_instance.get_list_of_swearwords()
+for language, words in all_words.items():
+    print(f"{language}: {len(words)} words")
+```
+
+**Note:** The database initialization happens automatically on the first call to any lookup function, so you don't need to call `main()` manually.
+
+### Per-Call Language Configuration
+
+All lookup functions accept an optional `languages_to_check` parameter, allowing you to override the default language configuration on a case-by-case basis:
+
+```py
+from polyguard import LangConfig
+
+# Create a custom language config for this specific check
+custom_langs = LangConfig()
+custom_langs.en = True   # Only check English
+custom_langs.fr = False  # Don't check French
+custom_langs.de = False  # Don't check German
+# ... set other languages as needed
+
+# Use the custom config for this lookup only
+if polyguard_instance.is_a_swearword("hello world", languages_to_check=custom_langs):
+    print("Contains profanity in enabled languages")
+
+# Extract swearword with custom language set
+word = polyguard_instance.extract_swearword_if_present(
+    "bonjour monde", 
+    languages_to_check=custom_langs
+)
+
+# Get swearwords for custom language subset
+words = polyguard_instance.get_list_of_swearwords(languages=custom_langs)
+```
+
+This is useful when you need to:
+
+- Check text against only specific languages
+- Perform different validations for different contexts
+- Optimize performance by limiting language checks to what's needed
+
+If `languages_to_check`/`languages` is not provided, the instance's default configuration (set during initialization) is used.
 
 ## Documentation
 
