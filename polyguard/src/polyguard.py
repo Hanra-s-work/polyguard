@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: polyguard.py
 # CREATION DATE: 13-03-2026
-# LAST Modified: 19:45:40 21-03-2026
+# LAST Modified: 3:36:1 22-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -30,7 +30,7 @@
 """
 
 import sys
-from typing import Any, Optional
+from typing import Any, Optional, List, Set, Dict
 from threading import Lock
 from collections import OrderedDict
 
@@ -60,6 +60,11 @@ class PolyGuard:
     disp: Disp = initialise_logger(__qualname__, False)
 
     def __new__(cls, *args, **kwargs) -> "PolyGuard":
+        """Create or return singleton instance.
+
+        Returns:
+            PolyGuard: The singleton instance.
+        """
         with cls._class_lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
@@ -68,16 +73,16 @@ class PolyGuard:
     def __init__(self, langs: POLY_CONST.LangConfig, db_path: Optional[str] = None, success: int = 0, error: int = 1, log: bool = True, debug: bool = False) -> None:
         """Initialize the PolyGuard instance.
 
-        Args:
-            langs: LangConfig instance specifying which languages to check.
-            db_path: Path to the SQLite database. Uses package default if None.
-            success: Exit code for successful initialization (default 0).
-            error: Exit code for failures (default 1).
-            log: Enable logging output (default True).
-            debug: Enable debug-level logging (default False).
-
         On first call, attempts to establish a persistent database connection.
         If the connection fails, the instance will attempt to reconnect on demand.
+
+        Args:
+            langs (LangConfig): LangConfig instance specifying which languages to check.
+            db_path (Optional[str]): Path to the SQLite database. Default: None (package default).
+            success (int): Exit code for successful initialization. Default: 0.
+            error (int): Exit code for failures. Default: 1.
+            log (bool): Enable logging output. Default: True.
+            debug (bool): Enable debug-level logging. Default: False.
         """
         # Lock instance to prevent racing calls
         self._function_lock: Lock = Lock()
@@ -117,6 +122,91 @@ class PolyGuard:
         """
         return self.main()
 
+    def _sanify_word(self, word: str) -> Optional[str]:
+        """Sanitize and normalize input word for processing.
+
+        Strips whitespace, converts to lowercase, and validates non-empty.
+
+        Args:
+            word (str): Raw input word or phrase to sanitize.
+
+        Returns:
+            Optional[str]: Lowercased, stripped word, or None if empty/invalid.
+        """
+        # Quick sanity checks
+        if word is None:
+            return None
+
+        text = word.strip()
+
+        if not text:
+            return None
+
+        # If the input contains whitespace, check each token individually
+        text_low = text.lower()
+        return text_low
+
+    def _ensure_initialized(self) -> bool:
+        """Ensure database is initialized on first use."""
+        if not self._db_ready:
+            return self.main() == self.success
+        return True
+
+    def _determine_language_set(self, language: Optional[POLY_CONST.LangConfig]) -> POLY_CONST.LangConfig:
+        """Resolve language configuration, falling back to default if needed.
+
+        Args:
+            language (Optional[LangConfig]): Language config override. Default: None.
+
+        Returns:
+            LangConfig: Provided language config or default instance config.
+        """
+        if language is None:
+            return self.default_choice
+        return language
+
+    def _tokenify(self, text: str) -> List[str]:
+        """Tokenize text by splitting on whitespace after removing delimiters.
+
+        Uses pre-computed translation table for fast processing. Employs CPython's
+        optimized .split() fast-path (any-whitespace split with empty filtering).
+
+        Args:
+            text (str): Text to tokenize (assumed already lowercased).
+
+        Returns:
+            List[str]: List of non-empty token strings.
+        """
+        split_data = text.translate(POLY_CONST.TOKENISER_TABLE).split()
+        return split_data
+
+    def extract_swearword_if_present(self, word: str, *, languages_to_check: Optional[POLY_CONST.LangConfig] = None) -> Optional[str]:
+        """Extract first profanity match from word or phrase.
+
+        Tokenizes input and checks each token against enabled language word lists.
+        Returns immediately on first match for efficiency.
+
+        Args:
+            word (str): The word or phrase to check.
+            languages_to_check (Optional[LangConfig]): Language config override. Default: None.
+
+        Returns:
+            Optional[str]: First matching swearword token found, or None if none detected.
+        """
+        initialised = self._ensure_initialized()
+        if not initialised:
+            self.disp.log_error("Initial caching failed, retuning early")
+            return None
+        word_san = self._sanify_word(word)
+        if word_san is None:
+            return None
+        languages = self._determine_language_set(languages_to_check)
+        tokens = self._tokenify(word_san)
+        for tok in tokens:
+            if self._check_token(tok, languages):
+                return tok
+        return None
+
     def is_a_swearword(self, word: str, *, languages_to_check: Optional[POLY_CONST.LangConfig] = None) -> bool:
         """Check if a word or phrase contains profanity.
 
@@ -124,40 +214,62 @@ class PolyGuard:
         Uses per-language LRU cache to optimize repeated lookups.
 
         Args:
-            word: The word or phrase to check (whitespace-stripped).
-            languages_to_check: Optional LangConfig to override the default.
-                If None, uses the instance's default language configuration.
+            word (str): The word or phrase to check (whitespace-stripped).
+            languages_to_check (Optional[LangConfig]): Language config override. Default: None.
 
         Returns:
             bool: True if any enabled language contains the word, False otherwise.
         """
         self.disp.log_debug(f"is_a_swearword called with word={word!r}")
-
-        # Quick sanity checks
-        if word is None:
+        initialised = self._ensure_initialized()
+        if not initialised:
+            self.disp.log_error("Initial caching failed, retuning early")
+            return False
+        word_san = self._sanify_word(word)
+        if word_san is None:
             return False
 
-        text = word.strip()
+        languages = self._determine_language_set(languages_to_check)
+        tokens = self._tokenify(word_san)
+        for tok in tokens:
+            if self._check_token(tok, languages):
+                return True
+        return False
 
-        if not text:
-            return False
+    def get_list_of_swearwords(self, *, languages: Optional[POLY_CONST.LangConfig] = None) -> Dict[str, Set]:
+        """Retrieve all swearwords for enabled languages.
 
-        # If the input contains whitespace, check each token individually
-        text_low = text.lower()
+        Returns cached word sets if loaded, otherwise queries database.
+        Useful for inspection, testing, or bulk operations.
 
-        languages = languages_to_check or self.default_choice
+        Args:
+            languages (Optional[LangConfig]): Language config override. Default: None.
 
-        if " " in text_low:
-            # Check individual tokens first (e.g. 'mother fucker' -> 'mother', 'fucker')
-            for tok in text_low.split():
-                if self._check_token(tok, languages):
-                    return True
-
-            # Finally, check the whole phrase as a single entry
-            return self._check_token(text_low, languages)
-
-        # Single token; delegate to helper
-        return self._check_token(text_low, languages)
+        Returns:
+            Dict[str, Set]: Dictionary mapping language names to sets of profanity words.
+                Empty dict if database connection unavailable.
+        """
+        final = {}
+        language_check = self._determine_language_set(languages)
+        if not self.ensure_connection() or not self.sqlite:
+            self.disp.log_error(
+                "No DB connection available; aborting check"
+            )
+            return final
+        for lang in POLY_CONST.Langs:
+            lang_state = getattr(language_check, lang.value, None)
+            if lang_state is None:
+                self.disp.log_warning(f"{lang.value} is defined but not set")
+                continue
+            if lang_state is not None and lang_state is False:
+                self.disp.log_debug(f"{lang.value} is set to not be retrieved")
+                continue
+            cache_node = self._lang_cache.get(lang, None)
+            if cache_node is not None:
+                final[str(lang.name)] = cache_node
+            else:
+                final[str(lang.name)] = self.sqlite.get_words(lang)
+        return final
 
     def _check_token(self, text_low: str, languages: POLY_CONST.LangConfig) -> bool:
         """Check if a single token exists in any enabled language's word list.
@@ -166,8 +278,8 @@ class PolyGuard:
         database queries. Token must already be lowercased.
 
         Args:
-            text_low: Lowercased token to search for.
-            languages: LangConfig specifying which languages to query.
+            text_low (str): Lowercased token to search for.
+            languages (LangConfig): LangConfig specifying which languages to query.
 
         Returns:
             bool: True if token found in any enabled language, False otherwise.
@@ -209,9 +321,9 @@ class PolyGuard:
             return False
 
         # Ensure persistent connection before DB access
-        if not self.ensure_connection():
+        if not self.ensure_connection() or not self.sqlite:
             self.disp.log_error(
-                "No DB connection available in is_a_swearword; aborting check"
+                "No DB connection available; aborting check"
             )
             return False
 
@@ -248,7 +360,8 @@ class PolyGuard:
 
             if text_low in words:
                 self.disp.log_debug(
-                    f"Match found after DB load for lang={lang.value}")
+                    f"Match found after DB load for lang={lang.value}"
+                )
                 return True
 
         return False
@@ -260,12 +373,13 @@ class PolyGuard:
         cache_limit languages into memory for faster lookup.
 
         Returns:
-            int: success code (0) if DB is ready, error code otherwise.
+            int: Success code (0) if DB ready, error code otherwise.
         """
         # Probe the configured DB to ensure it is accessible and usable.
         self.disp.log_debug("main() called to probe DB")
         # Ensure persistent connection
-        if not self.ensure_connection():
+        conn_status = self.ensure_connection()
+        if not conn_status or not self.sqlite:
             self._db_ready = False  # type: ignore[attr-defined]
             self.disp.log_error("DB probe failed: cannot connect")
             return self.error
