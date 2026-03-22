@@ -19,7 +19,7 @@
 # PROJECT: polyguard
 # FILE: constants.py
 # CREATION DATE: 20-03-2026
-# LAST Modified: 3:14:51 22-03-2026
+# LAST Modified: 3:53:29 22-03-2026
 # DESCRIPTION:
 # A module that provides a set of swearwords to listen to when filtering while allowing to toggle on and off different languages.
 # /STOP
@@ -298,4 +298,4 @@ STATUS_BLOCKED = "BLOCKED"
 STATUS_OK = "OK"
 DB_PATH_FMT = "DB path: {path}"
 
-TOKENISER_TABLE = str.maketrans('', '', '\n\r\t\f ')
+TOKENISER_TABLE = str.maketrans('', '', '\n\r\t\f')
